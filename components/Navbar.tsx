@@ -5,6 +5,10 @@ function Navbar() {
   return (
     <div>
       <ul className='menu shadow-md min-h-screen bg-green-50 pt-4'>
+        <div className='relative flex flex-col justify-center items-center w-full'>
+            <p className='text-lg font-bold pl-2'>Kazi KYC</p>
+            <div className='divider-accent divider w-1/4 self-center pt-0 mt-0'></div>
+        </div>
         <li><a href="">Home</a></li>
         <li><a href="">How it Works</a></li>
         <li><a href="">Verify ID</a></li>
