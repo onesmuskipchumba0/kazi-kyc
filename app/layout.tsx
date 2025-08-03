@@ -28,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-    <html lang="en">
+    <html lang="en" data-theme="light">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -36,7 +36,10 @@ export default function RootLayout({
           <SignInComponent/>
         </SignedOut>
         <SignedIn>
-          {children}
+          <div className="flex flex-row space-x-12 ml-2 mt-5">
+            <Navbar />
+            {children}
+          </div>
         </SignedIn>
       </body>
     </html>
