@@ -7,7 +7,11 @@ function Navbar() {
     const {user, isLoaded, isSignedIn} = useUser();
 
     !isLoaded || !isSignedIn || !user? (
-      <><span className='loading loading-ring loading-xl'></span></>
+      <>
+          <div className='flex w-full justify-center items-center py-2'>
+            <span className='loading loading-ring loading-xl'></span>
+          </div>
+      </>
     ) : null;
 
 
@@ -30,7 +34,7 @@ function Navbar() {
         <li><a href="/about">About</a></li>
         <li><a href="https://github.com/onesmuskipchumba0/kazi-kyc">Github</a></li>
         <div className='divider'></div>
-        {user && (
+        {user ? (
           <div className='flex flex-col w-36 items-center space-y-4 py-4'>
             <Image
               src={user.imageUrl}
@@ -40,6 +44,10 @@ function Navbar() {
               className='rounded-full'
             />
             <span className='text-center'>Welcome back, <span className='font-semibold'>{user.fullName}</span></span>
+          </div>
+        ): (
+          <div className='flex w-full justify-center items-center py-2'>
+            <span className='loading loading-ring loading-xl'></span>
           </div>
         )}
         <div className='btn bg-green-300 hover:bg-green-400 transition-all ease-in text-gray-600 flex flex-row space-x-2 items-center justify-center '>

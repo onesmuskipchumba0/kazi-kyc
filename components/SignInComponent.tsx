@@ -1,8 +1,11 @@
+'use client';
 import { SignIn } from '@clerk/nextjs';
+import { useClerk } from '@clerk/nextjs';
 import React from 'react';
 import Image from 'next/image';
 
 function SignInComponent() {
+  const {loaded} = useClerk();
   return (
     <div className="flex min-h-screen">
       {/* Left Section */}
@@ -23,13 +26,19 @@ function SignInComponent() {
       {/* Right Section with SignIn */}
       <div className="flex-1 flex justify-center items-center">
         <div className="w-full max-w-[500px] px-4">
-          <SignIn
-            appearance={{
-              elements: {
-                card: 'w-full h-[60vh] shadow-lg rounded-lg',
-              },
-            }}
-          />
+          { loaded ? (
+            <SignIn
+              appearance={{
+                elements: {
+                  card: 'w-full h-[60vh] shadow-lg rounded-lg',
+                },
+              }}
+            />
+          ): (
+                <div className='flex w-full justify-center items-center py-2'>
+                  <span className='loading loading-ring loading-xl'></span>
+                </div>
+          )}
         </div>
       </div>
     </div>
