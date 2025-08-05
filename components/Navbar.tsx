@@ -24,7 +24,7 @@ function Navbar() {
         </div>
         <li><a href="/">Home</a></li>
         <li><a href="/about">How it Works</a></li>
-        <li><a href="/verify-id">Verify ID</a></li>
+        <li><a href="/id">Verify ID</a></li>
         <li><a href="/pricing">Pricing</a></li>
         <li><a href="/work">Find Work</a></li>
         <li><a href="/workers">Browse Verified workers</a></li>
