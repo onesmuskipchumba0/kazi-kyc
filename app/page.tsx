@@ -8,7 +8,7 @@ import { useUser } from "@clerk/nextjs"
 export default function HomePage() {
   const {user, isLoaded} = useUser();
   return (
-    <div className="flex-1 py-6 pr-6 min-h-screen bg-gray-50">
+    <div className="flex-1 py-6 pr-6 min-h-screen bg-gray- justify-center items-center w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="flex items-center justify-between mb-6 px-4">

@@ -26,7 +26,7 @@ function Navbar() {
   }
 
   return (
-    <div className="min-w-[250px] bg-white border-r border-gray-200 h-screen flex flex-col justify-between shadow-lg">
+    <div className="fixed top-0 left-0 min-w-[250px] bg-white border-r border-gray-200 h-screen flex flex-col justify-between shadow-lg">
       <div>
         {/* Logo */}
         <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
