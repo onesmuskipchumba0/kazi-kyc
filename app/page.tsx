@@ -88,7 +88,7 @@ export default function HomePage() {
             <h1>Welcome back, John!</h1>
             <p className="text-muted-foreground">Here's what's happening in your network</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition">
+          <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded shadow hover:bg-slate-700 transition">
             <PlusCircle className="w-4 h-4" />
             Share Work
           </button>
