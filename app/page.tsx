@@ -6,6 +6,7 @@ import { recentPosts } from "@/api/homePage"
 import { useUser } from "@clerk/nextjs"
 
 export default function HomePage() {
+  
   const {user, isLoaded} = useUser();
   return (
     <div className="flex-1 py-6 pr-6 min-h-screen bg-gray- justify-center items-center w-full">
