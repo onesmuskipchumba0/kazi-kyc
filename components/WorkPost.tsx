@@ -30,7 +30,7 @@ export default function WorkPost({
 }: WorkPostProps) {
   return (
     <div className="mb-6 rounded-lg shadow bg-white">
-      <div className="pb-3 border-b">
+      <div className="pb-3">
         <div className="flex items-start gap-3 p-4">
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
             {author.avatar ? (
@@ -88,7 +88,7 @@ export default function WorkPost({
         )}
       </div>
       
-      <div className="pt-0 px-4 pb-4 border-t">
+      <div className="pt-0 px-4 pb-4 ">
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <button 
