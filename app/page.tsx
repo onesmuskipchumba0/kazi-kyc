@@ -5,10 +5,10 @@ import { recentPosts } from "@/api/homePage"
 
 export default function HomePage() {
   return (
-    <div className="flex-1 p-6 min-h-screen bg-gray-50">
+    <div className="flex-1 py-6 pr-6 min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 px-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Welcome back, John!</h1>
             <p className="text-gray-600">Here's what's happening in your network</p>
