@@ -16,11 +16,11 @@ import Image from 'next/image';
 import { useUser, SignOutButton } from '@clerk/nextjs';
 
 function Navbar() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { user, isLoaded } = useUser();
 
-  if (!isLoaded || !isSignedIn || !user) {
+  if (!isLoaded) {
     return (
-      <div className="flex w-full justify-center items-center py-2">
+      <div className="flex w-full justify-center items-center py-2 h-screen">
         <span className="loading loading-ring loading-lg"></span>
       </div>
     );

@@ -8,13 +8,19 @@ import { useUser } from "@clerk/nextjs"
 export default function HomePage() {
   
   const {user, isLoaded} = useUser();
+  if(!user || !isLoaded){
+    return (
+    <div className="flex flex-1 items-center justify-center h-screen">
+      <span className="loading loading-spinner loading-lg"></span>
+    </div>
+  )}
   return (
     <div className="flex-1 py-6 pr-6 min-h-screen bg-gray- justify-center items-center w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
         <div className="flex items-center justify-between mb-6 px-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {isLoaded ? user?.firstName : null}!</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
             <p className="text-gray-600">Here's what's happening in your network</p>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg shadow hover:bg-slate-700 transition-colors">
