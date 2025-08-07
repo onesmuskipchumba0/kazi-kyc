@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react'
 import { Calendar, Clock, DollarSign, CheckCircle, XCircle, AlertCircle, MapPin, Star, Eye, MessageSquare, Phone, Briefcase } from "lucide-react"
-import { FaArrowDown, FaFilter } from 'react-icons/fa'
+import { FaArrowDown, FaDotCircle, FaFilter } from 'react-icons/fa'
 import { FaFilterCircleXmark } from 'react-icons/fa6'
 interface JobApplication {
   id: string
@@ -239,9 +239,10 @@ function page() {
         <span>Discover jobs that match your skills and location</span>
       </div>
 
-      <div className='flex items-center justify-start w-full border rounded-xl border-slate-200 py-2 my-5 pl-8 pr-5'>
-        <div className="mr-auto w-80">
-          <div className="relative">
+      <div className='flex flex-col items-center justify-start w-full border rounded-xl border-slate-200 py-4 my-5 pl-8 pr-5'>
+        <div className='flex w-full'>
+        <div className="mr-auto w-1/2">
+          <div className="relative w-full">
             <input
               type="search"
               className="w-full pl-12 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-sm transition placeholder-gray-400 bg-white"
@@ -282,7 +283,17 @@ function page() {
           <FaFilter/>
           Filters
         </button>
+        </div>
+        <div className="flex items-center justify-start  w-full text-sm text-gray-600 space-x-2">
+          <span>156 jobs available</span>
+          <span className="text-xs">•</span>
+          <span>23 posted today</span>
+          <span className="text-xs">•</span>
+          <span>8 urgent positions</span>
+        </div>
     </div>
+
+
   </div>
   )
 }
