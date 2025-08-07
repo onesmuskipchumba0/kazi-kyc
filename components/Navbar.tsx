@@ -101,7 +101,7 @@ function Navbar() {
                 <p className="text-sm font-semibold text-gray-900 truncate">
                   {user.fullName || 'John Mwangi'}
                 </p>
-                <p className="text-xs text-blue-600 font-medium">Mason • Nairobi</p>
+                <p className="text-xs text-slate-400 font-medium">Mason • Nairobi</p>
               </div>
             </div>
             

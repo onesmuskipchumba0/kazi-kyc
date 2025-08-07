@@ -1,6 +1,5 @@
 "use client";
 import { MapPin, Star, MessageCircle } from "lucide-react"
-import { peopleData } from "@/app/api/homePage"
 import { useUsers } from "@/lib/homepage/homeStore"
 import { useEffect } from "react"
 
