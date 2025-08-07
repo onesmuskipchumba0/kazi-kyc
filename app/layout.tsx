@@ -5,7 +5,6 @@ import "./globals.css";
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import SignInComponent from "@/components/SignInComponent";
-import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,22 +27,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-<ClerkProvider>
-  <html lang="en" data-theme="light">
-    <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
-      <SignedOut>
-        <SignInComponent/>
-      </SignedOut>
-      <SignedIn>
-        <div className="flex min-h-screen">
-          <Navbar />
-          <main className="flex-1 min-h-screen ml-[250px]">
-            {children}
-          </main>
-        </div>
-      </SignedIn>
-    </body>
-  </html>
-</ClerkProvider>
+    <ClerkProvider>
+      <html lang="en" data-theme="light">
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}>
+          <SignedOut>
+            <SignInComponent/>
+            <main className="flex-1 min-h-screen">{children}</main>
+          </SignedOut>
+          <SignedIn>
+            <div>
+              <Navbar />
+              <main className="flex-1 min-h-screen ml-[250px]">{children}</main>
+            </div>
+          </SignedIn>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
