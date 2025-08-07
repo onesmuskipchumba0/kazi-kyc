@@ -4,14 +4,18 @@ import WorkPost  from "@/components/WorkPost"
 import PeopleAround from "@/components/PeopleAround"
 import { recentPosts } from "@/app/api/homePage"
 import { useUser } from "@clerk/nextjs"
-import { useUsers } from "@/lib/homepage/homeStore";
+import { useUsers, useRecentPosts } from "@/lib/homepage/homeStore";
+
 import { useEffect } from "react";
 export default function HomePage() {
   
   const {user, isLoaded} = useUser();
+  const posts = useRecentPosts((state) => state.posts)
+  const fetchPosts = useRecentPosts((state) => state.fetchPosts)
 
+  useEffect(()=>{fetchPosts()},[fetchPosts])
 
-  if(!user || !isLoaded){
+  if(!user || !isLoaded || posts.length == 0){
     return (
     <div className="flex flex-1 items-center justify-center h-screen">
       <span className="loading loading-spinner loading-lg"></span>
@@ -47,7 +51,7 @@ export default function HomePage() {
 
             {/* Work Posts */}
             <div className="space-y-6">
-              {recentPosts.map((post) => (
+              {posts.map((post) => (
                 <WorkPost key={post.id} {...post} />
               ))}
             </div>

@@ -28,7 +28,7 @@ interface Author{
     location: string
 }
 interface Post{
-    id: string | null
+    id: string 
     author: Author
     content: string
     images: string[]
@@ -58,7 +58,7 @@ export const useUsers = create<useStore>((set) =>({
 
 }))
 
-export const recentPosts = create<usePosts>((set) => ({
+export const useRecentPosts = create<usePosts>((set) => ({
     posts: [],
     fetchPosts: async () => {
         try{

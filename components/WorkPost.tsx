@@ -35,8 +35,8 @@ export default function WorkPost({
           <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
             {author.avatar ? (
               <img
-                src={author.avatar}
-                alt={author.name}
+                src={author.avatar ?? ""}
+                alt={author.name ?? ""}
                 className="w-10 h-10 object-cover rounded-full"
               />
             ) : (
