@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 import {
   FaHome,
   FaSearch,
@@ -42,44 +43,44 @@ function Navbar() {
         {/* Menu */}
         <ul className="menu px-2 space-y-1 py-4">
           <li>
-            <a href="/" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaHome className="text-gray-600" /> Home
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/work" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/work" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaSearch className="text-gray-600" /> Find Work
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/my-jobs" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/my-jobs" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaBriefcase className="text-gray-600" /> My Jobs
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/messages" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/messages" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaEnvelope className="text-gray-600" /> Messages
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/network" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/network" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaUsers className="text-gray-600" /> Network
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/notifications" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/notifications" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaBell className="text-gray-600" /> Notifications
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/profile" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/profile" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaUser className="text-gray-600" /> Profile
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="/settings" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
+            <Link href="/settings" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
               <FaCog className="text-gray-600" /> Settings
-            </a>
+            </Link>
           </li>
         </ul>
       </div>
