@@ -12,36 +12,20 @@ interface User {
     hourlyRate: string | null;
     isOnline: boolean;
   
-    fetchUser: () => Promise<void>;
+    
   }
   
-const useUsers = create<User>((set) =>({
-    id: null,
-    name: null,
-    profession: null,
-    avatar: null,
-    rating: 0,
-    location: null,
-    distance: null,
-    hourlyRate: null,
-    isOnline: false,
-
-    fetchUser: async () => {
+interface useStore{
+    users: User[]
+    fetchUsers: () => Promise<void>;
+}
+export const useUsers = create<useStore>((set) =>({
+    users: [],
+    fetchUsers: async () => {
         try{
             const res =  axios.get("/api/home/users");
-            const user = (await res).data;
-            set({ 
-                id: user.id,
-                name: user.name,
-                profession: user.profession,
-                avatar: user.avatar,
-                rating: user.rating,
-                location: user.location,
-                distance: user.distance,
-                hourlyRate: user.hourlyRate,
-                isOnline: user.isOnline,
-
-            })
+            const data = (await res).data;
+            set({ users: data })
         } catch ( err){
             console.error(`Internal sever error: ${err}`)
         }

@@ -1,6 +1,8 @@
+"use client";
 import { MapPin, Star, MessageCircle } from "lucide-react"
-import { peopleData } from "@/api/homePage"
-
+import { peopleData } from "@/app/api/homePage"
+import { useUsers } from "@/lib/homepage/homeStore"
+import { useEffect } from "react"
 
 interface PersonProps {
   id: string
@@ -17,6 +19,11 @@ interface PersonProps {
 
 
 export default function PeopleAround() {
+  
+  const fetchUsers = useUsers((state) => state.fetchUsers)
+  const users = useUsers((state) => state.users)
+
+  useEffect(() => {fetchUsers()}, [fetchUsers])
   return (
     <div className="bg-white rounded-lg shadow-md p-4">
       <div className="mb-4 border-b pb-2 flex items-center gap-2">
@@ -31,12 +38,12 @@ export default function PeopleAround() {
         <span className="font-semibold text-lg">People Around You</span>
       </div>
       <div className="space-y-4">
-        {peopleData.map((person) => (
+        {users?.map((person) => (
           <div key={person.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
             <div className="relative">
               <img
-                src={person.avatar}
-                alt={person.name}
+                src={person.avatar ?? ""}
+                alt={person.name ?? ""}
                 className="w-10 h-10 rounded-full border-2 border-gray-200 object-cover"
               />
               {person.isOnline && (

@@ -2,12 +2,15 @@
 import { PlusCircle, TrendingUp } from "lucide-react"
 import WorkPost  from "@/components/WorkPost"
 import PeopleAround from "@/components/PeopleAround"
-import { recentPosts } from "@/api/homePage"
+import { recentPosts } from "@/app/api/homePage"
 import { useUser } from "@clerk/nextjs"
-
+import { useUsers } from "@/lib/homepage/homeStore";
+import { useEffect } from "react";
 export default function HomePage() {
   
   const {user, isLoaded} = useUser();
+
+
   if(!user || !isLoaded){
     return (
     <div className="flex flex-1 items-center justify-center h-screen">
