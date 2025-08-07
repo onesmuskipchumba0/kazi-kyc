@@ -1,4 +1,6 @@
 import { MapPin, Star, MessageCircle } from "lucide-react"
+import { peopleData } from "@/api/homePage"
+
 
 interface PersonProps {
   id: string
@@ -12,52 +14,7 @@ interface PersonProps {
   isOnline?: boolean
 }
 
-const peopleData: PersonProps[] = [
-  {
-    id: "1",
-    name: "Mary Wanjiku",
-    profession: "House Help",
-    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b1c0?w=40&h=40&fit=crop&crop=face",
-    rating: 4.8,
-    location: "Westlands",
-    distance: "2.1 km",
-    hourlyRate: "KES 500/day",
-    isOnline: true
-  },
-  {
-    id: "2", 
-    name: "David Kiprotich",
-    profession: "Watchman",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-    rating: 4.6,
-    location: "Karen",
-    distance: "3.4 km", 
-    hourlyRate: "KES 15,000/month",
-    isOnline: false
-  },
-  {
-    id: "3",
-    name: "Grace Akinyi", 
-    profession: "Waiter",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face",
-    rating: 4.9,
-    location: "CBD",
-    distance: "5.2 km",
-    hourlyRate: "KES 800/day",
-    isOnline: true
-  },
-  {
-    id: "4",
-    name: "Samuel Otieno",
-    profession: "Mason",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face", 
-    rating: 4.7,
-    location: "Kilimani",
-    distance: "1.8 km",
-    hourlyRate: "KES 1,200/day",
-    isOnline: true
-  }
-]
+
 
 export default function PeopleAround() {
   return (
