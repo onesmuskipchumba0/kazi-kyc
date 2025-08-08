@@ -249,6 +249,8 @@ const applicationTips = [
   desc:"Tailor your message to each job"
 }
 ]
+
+const positionsFilter = [ "Most recent", "Most relevant", "Highest pay", "Lowest pay", "Nearest first"]
 function getStatusColor(status: string) {
   switch (status) {
     case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
@@ -345,6 +347,7 @@ function page() {
     </div>
 
     <div className='flex flex-row w-full justify-start'>
+      {/* left side */}
       <div className=''>
           {/* Jobs categpries */}
         <div className='border border-slate-300 rounded-lg p-5 gap-3'>
@@ -372,6 +375,31 @@ function page() {
             ))}
           </div>
         </div>
+
+      </div>
+
+      {/* Right side */}
+
+      <div className='w-full flex px-8 py-4'>
+        {/* Available porsition filter */}
+        <div className='flex flex-row justify-between w-full'>
+        <span className='text-md'>Available positions</span>
+        <div className="dropdown  ml-auto">
+          <div tabIndex={0} role="button" className="btn m-1 flex items-center">
+            {positionsFilter[0]}
+            <FaArrowDown />
+          </div>
+          <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow">
+            {positionsFilter.map((e, i) => (
+              <li key={i}>
+                <a onClick={() => handleSelect(e)}>{e}</a>
+              </li>
+            ))}
+          </ul>
+        </div>
+        </div>
+
+        
       </div>
     </div>
 
