@@ -1,8 +1,8 @@
 "use client";
 import React, { useState } from 'react'
 import { Calendar, Clock, DollarSign, CheckCircle, XCircle, AlertCircle, MapPin, Star, Eye, MessageSquare, Phone, Briefcase } from "lucide-react"
-import { FaArrowDown, FaDotCircle, FaFilter } from 'react-icons/fa'
-import { FaFilterCircleXmark } from 'react-icons/fa6'
+import { FaArrowDown, FaDotCircle, FaFilter, FaHome, FaStore } from 'react-icons/fa'
+import { FaFilterCircleXmark, FaPeopleGroup, FaShield, FaSpoon } from 'react-icons/fa6'
 interface JobApplication {
   id: string
   title: string
@@ -200,6 +200,39 @@ const completedJobs: CompletedJob[] = [
   }
 ]
 
+const jobs = [
+  {
+    id:"1",
+    name:"All jobs",
+    total:156,
+    icon: <FaStore />
+  },
+  {
+    id:"2",
+    name:"House help",
+    total:42,
+    icon: <FaHome/>
+  },
+  {
+    id:"3",
+    name:"Masonry",
+    total:28,
+    icon: <FaPeopleGroup/>
+  },
+  {
+    id:"4",
+    name:"Security",
+    total:35,
+    icon: <FaShield/>
+  },
+  {
+    id:"5",
+    name:"Food services",
+    total:47,
+    icon: <FaSpoon/>
+  },
+
+]
 function getStatusColor(status: string) {
   switch (status) {
     case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
@@ -232,6 +265,8 @@ function page() {
   const handleSelect = (loc: string) => {
     setLocation(loc);
   };
+
+
   return (
     <div className='flex flex-1 flex-col items-center mx-24'>
       <div className='flex flex-col w-full justify-start'>
@@ -291,6 +326,25 @@ function page() {
           <span className="text-xs">•</span>
           <span>8 urgent positions</span>
         </div>
+    </div>
+
+    <div className='flex flex-row w-full justify-start'>
+      <div>
+        <div className='border border-slate-300 rounded-lg p-5 gap-3'>
+          <span className=''>Job categories</span>
+
+          {/* Jobs information */}
+            <ul className='flex flex-col pt-3'>{jobs.map((e, i) =>( 
+
+              <li key={i} className='flex flex-row items-center justify-start py-2 hover:bg-slate-200 rounded-md px-2'>
+                {e.icon} 
+                <span className='ml-2 mr-3'>{e.name}</span>
+                <span className='ml-auto rounded-md bg-slate-200 p-1'>{e.total}</span>
+              </li>
+              ))}
+            </ul>
+        </div>
+      </div>
     </div>
 
 
