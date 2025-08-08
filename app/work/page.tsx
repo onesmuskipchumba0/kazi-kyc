@@ -232,6 +232,22 @@ const jobs = [
     icon: <FaSpoon/>
   },
 
+ 
+]
+
+const applicationTips = [
+  {
+  title:"Complete your profile",
+  desc:"Profiles with photos get 3x more responses"
+},
+{
+  title:"Apply early",
+  desc:"Early applications have higher success rates"
+}, 
+{
+  title:"Personalize applications",
+  desc:"Tailor your message to each job"
+}
 ]
 function getStatusColor(status: string) {
   switch (status) {
@@ -329,20 +345,32 @@ function page() {
     </div>
 
     <div className='flex flex-row w-full justify-start'>
-      <div>
+      <div className=''>
+          {/* Jobs categpries */}
         <div className='border border-slate-300 rounded-lg p-5 gap-3'>
           <span className=''>Job categories</span>
-
-          {/* Jobs information */}
             <ul className='flex flex-col pt-3'>{jobs.map((e, i) =>( 
 
-              <li key={i} className='flex flex-row items-center justify-start py-2 hover:bg-slate-200 rounded-md px-2'>
+              <li key={i} className='flex flex-row items-center justify-start py-2 hover:bg-slate-200 rounded-md'>
                 {e.icon} 
                 <span className='ml-2 mr-3'>{e.name}</span>
                 <span className='ml-auto rounded-md bg-slate-200 p-1'>{e.total}</span>
               </li>
               ))}
             </ul>
+        </div>
+
+        {/* Application tips */}
+        <div className='flex flex-col mt-5 jusfify-start items-center gap-3 border border-slate-200 shadow-md p-2 px-4 rounded-md'>
+          <span className='mb-3 self-start'>Application tips</span>
+          <div>
+            {applicationTips.map((e,i) => (
+              <div className='bg-slate-200 my-3 rounded-md p-3' key={i}>
+                <span className='font-semibold'>{e.title}</span>
+                <p>{e.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
