@@ -1,301 +1,293 @@
 "use client";
-import React, { useState } from 'react'
-import { Calendar, Clock, DollarSign, CheckCircle, XCircle, AlertCircle, MapPin, Star, Eye, MessageSquare, Phone, Briefcase } from "lucide-react"
-import { FaArrowDown, FaDotCircle, FaFilter } from 'react-icons/fa'
-import { FaFilterCircleXmark } from 'react-icons/fa6'
-interface JobApplication {
-  id: string
-  title: string
+import { useWorkStore } from "@/lib/work/WorkStore";
+import { applicationTips, featuredJobs } from "../api/work/workData";
+
+import {
+  Search,
+  MapPin,
+  Clock,
+  Star,
+  Filter,
+  Briefcase,
+  Home as HomeIcon,
+  Users,
+  Shield,
+  Utensils,
+} from "lucide-react";
+import { useEffect, useMemo } from "react";
+
+interface JobListing {
+  id: string;
+  title: string;
   employer: {
-    name: string
-    avatar?: string
-    rating: number
-  }
-  category: string
-  location: string
-  appliedDate: string
-  status: "pending" | "reviewed" | "interview" | "accepted" | "rejected"
-  payRate: string
-  payType: "hourly" | "daily" | "monthly" | "project"
-}
-
-interface ActiveJob {
-  id: string
-  title: string
-  employer: {
-    name: string
-    avatar?: string
-    rating: number
-    phone: string
-  }
-  category: string
-  location: string
-  startDate: string
-  endDate?: string
-  payRate: string
-  payType: "hourly" | "daily" | "monthly" | "project"
-  progress: number
-  description: string
-  status: "in-progress" | "completed" | "paused"
-}
-
-interface CompletedJob {
-  id: string
-  title: string
-  employer: {
-    name: string
-    avatar?: string
-    rating: number
-  }
-  category: string
-  location: string
-  completedDate: string
-  payRate: string
-  payType: "hourly" | "daily" | "monthly" | "project"
-  duration: string
-  earnings: number
-  rating?: number
-}
-
-const locations = ["All Locations", "Westlands", "kilimani", "Chepkoilel", "Eldoret", "Nakuru", "Karen"]
-const jobApplications: JobApplication[] = [
-  {
-    id: "1",
-    title: "House Manager Position",
-    employer: {
-      name: "Sarah Johnson",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b1c0?w=40&h=40&fit=crop&crop=face",
-      rating: 4.9
-    },
-    category: "House Help",
-    location: "Karen, Nairobi",
-    appliedDate: "2 days ago",
-    status: "interview",
-    payRate: "KES 35,000",
-    payType: "monthly"
-  },
-  {
-    id: "2",
-    title: "Stone Wall Construction",
-    employer: {
-      name: "David Kiplagat",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-      rating: 4.7
-    },
-    category: "Masonry",
-    location: "Runda, Nairobi",
-    appliedDate: "4 days ago", 
-    status: "pending",
-    payRate: "KES 2,500",
-    payType: "daily"
-  },
-  {
-    id: "3",
-    title: "Night Security Guard",
-    employer: {
-      name: "Apex Security Ltd",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
-      rating: 4.6
-    },
-    category: "Security",
-    location: "Industrial Area",
-    appliedDate: "1 week ago",
-    status: "rejected",
-    payRate: "KES 18,000",
-    payType: "monthly"
-  }
-]
-
-const activeJobs: ActiveJob[] = [
-  {
-    id: "1",
-    title: "Residential Garden Wall",
-    employer: {
-      name: "Mary Wanjiku",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face",
-      rating: 4.8,
-      phone: "+254712345678"
-    },
-    category: "Masonry",
-    location: "Westlands, Nairobi",
-    startDate: "3 days ago",
-    endDate: "In 4 days",
-    payRate: "KES 3,000",
-    payType: "daily",
-    progress: 65,
-    description: "Building decorative garden wall with natural stones. Project is progressing well and on schedule.",
-    status: "in-progress"
-  },
-  {
-    id: "2",
-    title: "Part-time House Cleaning",
-    employer: {
-      name: "James Otieno",
-      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=40&h=40&fit=crop&crop=face",
-      rating: 4.5,
-      phone: "+254723456789"
-    },
-    category: "House Help",
-    location: "Kilimani, Nairobi",
-    startDate: "2 weeks ago",
-    payRate: "KES 800",
-    payType: "daily",
-    progress: 90,
-    description: "Regular cleaning schedule 3 times per week. Client is very satisfied with the work quality.",
-    status: "in-progress"
-  }
-]
-
-const completedJobs: CompletedJob[] = [
-  {
-    id: "1",
-    title: "Office Deep Cleaning",
-    employer: {
-      name: "Tech Hub Nairobi",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-      rating: 4.4
-    },
-    category: "House Help",
-    location: "Westlands, Nairobi",
-    completedDate: "1 week ago",
-    payRate: "KES 1,200",
-    payType: "daily",
-    duration: "3 days",
-    earnings: 3600,
-    rating: 5
-  },
-  {
-    id: "2",
-    title: "Compound Wall Repair",
-    employer: {
-      name: "Grace Mutua",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b1c0?w=40&h=40&fit=crop&crop=face",
-      rating: 4.9
-    },
-    category: "Masonry",
-    location: "Karen, Nairobi",
-    completedDate: "2 weeks ago",
-    payRate: "KES 15,000",
-    payType: "project",
-    duration: "5 days",
-    earnings: 15000,
-    rating: 4
-  },
-  {
-    id: "3",
-    title: "Event Security",
-    employer: {
-      name: "Elite Events Kenya",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
-      rating: 4.8
-    },
-    category: "Security",
-    location: "Various Venues",
-    completedDate: "3 weeks ago",
-    payRate: "KES 1,800",
-    payType: "daily",
-    duration: "2 days",
-    earnings: 3600,
-    rating: 5
-  }
-]
-
-function getStatusColor(status: string) {
-  switch (status) {
-    case "pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
-    case "reviewed": return "bg-blue-100 text-blue-800 border-blue-200"
-    case "interview": return "bg-purple-100 text-purple-800 border-purple-200"
-    case "accepted": return "bg-green-100 text-green-800 border-green-200"
-    case "rejected": return "bg-red-100 text-red-800 border-red-200"
-    case "in-progress": return "bg-blue-100 text-blue-800 border-blue-200"
-    case "completed": return "bg-green-100 text-green-800 border-green-200"
-    case "paused": return "bg-gray-100 text-gray-800 border-gray-200"
-    default: return "bg-gray-100 text-gray-800 border-gray-200"
-  }
-}
-
-function getStatusIcon(status: string) {
-  switch (status) {
-    case "pending": return <Clock className="w-4 h-4" />
-    case "reviewed": return <Eye className="w-4 h-4" />
-    case "interview": return <MessageSquare className="w-4 h-4" />
-    case "accepted": return <CheckCircle className="w-4 h-4" />
-    case "rejected": return <XCircle className="w-4 h-4" />
-    case "in-progress": return <AlertCircle className="w-4 h-4" />
-    case "completed": return <CheckCircle className="w-4 h-4" />
-    case "paused": return <Clock className="w-4 h-4" />
-    default: return <Clock className="w-4 h-4" />
-  }
-}
-function page() {
-  const [location, setLocation] = useState("All locations");
-  const handleSelect = (loc: string) => {
-    setLocation(loc);
+    name: string;
+    avatar?: string;
+    rating: number;
+    verified: boolean;
   };
-  return (
-    <div className='flex flex-1 flex-col items-center mx-24'>
-      <div className='flex flex-col w-full justify-start'>
-        <span className='text-xl font-bold'>Find Work Opportunities</span>
-        <span>Discover jobs that match your skills and location</span>
-      </div>
-
-      <div className='flex flex-col items-center justify-start w-full border rounded-xl border-slate-200 py-4 my-5 pl-8 pr-5'>
-        <div className='flex w-full'>
-        <div className="mr-auto w-1/2">
-          <div className="relative w-full">
-            <input
-              type="search"
-              className="w-full pl-12 pr-4 py-2 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-200 shadow-sm transition placeholder-gray-400 bg-white"
-              placeholder="Search for jobs, employers, or categories..."
-            />
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <g
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                  strokeWidth="2.5"
-                  fill="none"
-                  stroke="currentColor"
-                >
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <path d="m21 21-4.3-4.3"></path>
-                </g>
-              </svg>
-            </span>
-          </div>
-        </div>
-
-        <div className="dropdown">
-          <div tabIndex={0} role="button" className="btn m-1">
-            {location}
-            <FaArrowDown />
-          </div>
-          <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-10 w-52 p-2 shadow">
-            {locations.map((loc, i) => (
-              <li key={i}>
-                <a onClick={() => handleSelect(loc)}>{loc}</a>
-              </li>
-            ))}
-          </ul>
-      </div>
-
-        <button className='btn'>
-          <FaFilter/>
-          Filters
-        </button>
-        </div>
-        <div className="flex items-center justify-start  w-full text-sm text-gray-600 space-x-2">
-          <span>156 jobs available</span>
-          <span className="text-xs">•</span>
-          <span>23 posted today</span>
-          <span className="text-xs">•</span>
-          <span>8 urgent positions</span>
-        </div>
-    </div>
-
-
-  </div>
-  )
+  category: string;
+  location: string;
+  description: string;
+  requirements: string[];
+  payRate: string;
+  payType: "hourly" | "daily" | "monthly" | "project";
+  postedTime: string;
+  urgent?: boolean;
+  applicants: number;
 }
 
-export default page
+const categories = [
+  { name: "All Jobs", icon: Briefcase, count: 156 },
+  { name: "House Help", icon: HomeIcon, count: 42 },
+  { name: "Masonry", icon: Users, count: 28 },
+  { name: "Security", icon: Shield, count: 35 },
+  { name: "Food Service", icon: Utensils, count: 51 },
+];
+
+
+function UrgentJobRow({ job }: { job: JobListing }) {
+  return (
+    <div className="flex justify-between items-center bg-white border border-slate-200 rounded-lg p-3">
+      <div>
+        <h4 className="font-medium">{job.title}</h4>
+        <p className="text-sm text-gray-500">
+          {job.employer.name} • {job.location}
+        </p>
+        <p className="text-green-600 font-semibold text-sm">
+          {job.payRate}/{job.payType}
+        </p>
+      </div>
+      <button className="btn bg-orange-500 hover:bg-orange-400 btn-sm text-white">Apply Now</button>
+    </div>
+  );
+}
+
+function JobCard({ job }: { job: JobListing }) {
+  return (
+    <div className="card bg-white shadow border border-slate-200">
+      <div className="card-body p-5">
+        <div className="flex items-start justify-between">
+          <div className="flex gap-3">
+            <div className="avatar placeholder">
+              <div className="bg-neutral text-neutral-content rounded-full w-12">
+                {job.employer.avatar ? (
+                  <img src={job.employer.avatar} alt={job.employer.name} />
+                ) : (
+                  <span>{job.employer.name.charAt(0)}</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold">{job.title}</h3>
+                {job.urgent && (
+                  <div className="badge badge-error text-xs text-white">
+                    Urgent
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>{job.employer.name}</span>
+                {job.employer.verified && (
+                  <div className="badge badge-outline badge-success text-xs">
+                    Verified
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                  {job.employer.rating}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="badge badge-outline">{job.category}</div>
+        </div>
+
+        <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+          <div className="flex items-center gap-1">
+            <MapPin className="w-4 h-4" /> {job.location}
+          </div>
+          <div className="flex items-center gap-1">
+            <Clock className="w-4 h-4" /> {job.postedTime}
+          </div>
+          <span>{job.applicants} applicants</span>
+        </div>
+
+        <p className="text-sm mt-3">{job.description}</p>
+
+        <div>
+          <h4 className="font-medium text-sm mb-2 mt-3">Requirements:</h4>
+          <div className="flex flex-wrap gap-2">
+            {job.requirements.map((req, i) => (
+              <div key={i} className="badge badge-outline text-xs">
+                {req}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
+          <div>
+            <span className="font-semibold text-lg text-green-600">
+              {job.payRate}
+            </span>
+            <span className="text-gray-500 text-sm">/{job.payType}</span>
+          </div>
+          <div className="flex gap-2">
+            <button className="btn btn-outline btn-sm">Save</button>
+            <button className="btn bg-slate-900 text-white btn-sm">Apply Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function FindWorkPage() {
+  const jobs = useWorkStore((state) => state.jobs);
+  const isLoading = useWorkStore((state) => state.isLoading);
+  const error = useWorkStore((state) => state.error);
+  const fetchJobs = useWorkStore((state) => state.fetchJobs);
+
+  useEffect(() => {
+    // fetch once on mount
+    fetchJobs();
+  }, [fetchJobs]);
+
+  const hasJobs = useMemo(() => jobs && jobs.length > 0, [jobs]);
+  return (
+    <div className="p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <h1 className="text-2xl font-bold">Find Work Opportunities</h1>
+        <p className="text-gray-500">
+          Discover jobs that match your skills and location
+        </p>
+
+        {/* Search + Filters */}
+        <div className="flex items-center gap-4 mt-6 bg-white p-4 rounded-xl shadow-sm">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search for jobs, skills, or keywords..."
+              aria-label="Search jobs"
+              className="input w-full pl-10 rounded-full bg-gray-100 border-0 focus:outline-none focus:ring-2 focus:ring-slate-300 placeholder:text-gray-400"
+            />
+          </div>
+          <select
+            aria-label="Location filter"
+            className="select w-48 rounded-full bg-gray-100 border-0 focus:outline-none focus:ring-2 focus:ring-slate-300"
+          >
+            <option>All Locations</option>
+            <option>Westlands</option>
+            <option>Karen</option>
+            <option>Kilimani</option>
+            <option>CBD</option>
+            <option>Industrial Area</option>
+          </select>
+          <button type="button" className="btn btn-primary gap-2 rounded-full shadow-sm">
+            <Filter className="w-4 h-4" /> Filters
+          </button>
+        </div>
+
+        {/* Stats Row */}
+        <div className="flex items-center gap-6 text-sm text-gray-500 mt-3">
+          {isLoading ? (
+            <>
+              <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" /> •
+              <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" /> •
+              <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+            </>
+          ) : (
+            <>
+              <span>{jobs.length} jobs available</span> •
+              <span>23 posted today</span> •
+              <span>{jobs.filter((j) => j.urgent).length} urgent positions</span>
+            </>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
+          {/* Left Sidebar */}
+          <div className="space-y-6 lg:col-span-1">
+            {/* Categories */}
+            <div className="card bg-white shadow border border-slate-200">
+              <div className="card-body">
+                <h2 className="card-title mb-3">Job Categories</h2>
+                {categories.map((c) => (
+                  <button
+                    key={c.name}
+                    className="btn btn-ghost justify-between w-full"
+                  >
+                    <div className="flex items-center gap-2">
+                      <c.icon className="w-4 h-4" /> {c.name}
+                    </div>
+                    <div className="badge badge-secondary">{c.count}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Application Tips */}
+            <div className="card bg-white shadow border border-slate-200">
+              <div className="card-body">
+                <h2 className="card-title mb-3">Application Tips</h2>
+                {applicationTips.map((tip) => (
+                  <div
+                    key={tip.title}
+                    className="p-3 rounded-lg bg-gray-50 mb-2"
+                  >
+                    <h4 className="font-medium text-sm">{tip.title}</h4>
+                    <p className="text-xs text-gray-500">{tip.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Content */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Urgent Positions */}
+            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+              <h3 className="font-semibold text-orange-700 mb-3 flex items-center gap-2">
+                <span>🔔</span> Urgent Positions
+              </h3>
+              <div className="space-y-3">
+                {isLoading ? (
+                  [...Array(3)].map((_, idx) => (
+                    <div key={idx} className="h-16 bg-orange-100 rounded-lg animate-pulse" />
+                  ))
+                ) : (
+                  jobs
+                    .filter((j) => j.urgent)
+                    .map((job) => <UrgentJobRow key={job.id} job={job} />)
+                )}
+              </div>
+            </div>
+
+            {/* All Jobs */}
+            {isLoading ? (
+              [...Array(4)].map((_, idx) => (
+                <div key={idx} className="card bg-white shadow border border-slate-200">
+                  <div className="card-body p-5 animate-pulse">
+                    <div className="h-5 w-48 bg-gray-200 rounded" />
+                    <div className="mt-3 h-3 w-full bg-gray-100 rounded" />
+                    <div className="mt-2 h-3 w-2/3 bg-gray-100 rounded" />
+                    <div className="mt-4 h-24 w-full bg-gray-100 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : hasJobs ? (
+              jobs.map((job) => <JobCard key={job.id} job={job} />)
+            ) : error ? (
+              <div className="alert alert-error text-white">{error}</div>
+            ) : (
+              <div className="text-gray-500">No jobs found.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
