@@ -1,4 +1,5 @@
 "use client";
+import { useWorkStore } from "@/lib/work/WorkStore";
 import { applicationTips, featuredJobs } from "../api/work/workData";
 
 import {
@@ -13,6 +14,7 @@ import {
   Shield,
   Utensils,
 } from "lucide-react";
+import { useEffect } from "react";
 
 interface JobListing {
   id: string;
@@ -142,6 +144,12 @@ function JobCard({ job }: { job: JobListing }) {
 }
 
 export default function FindWorkPage() {
+  const jobs = useWorkStore((state) => state.jobs)
+  const fetchJobs = useWorkStore((state) => state.fetchJobs)
+
+  useEffect(() => {fetchJobs()},[fetchJobs])
+
+  console.log(jobs)
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
@@ -231,7 +239,7 @@ export default function FindWorkPage() {
                 <span>🔔</span> Urgent Positions
               </h3>
               <div className="space-y-3">
-                {featuredJobs
+                {jobs
                   .filter((j) => j.urgent)
                   .map((job) => (
                     <UrgentJobRow key={job.id} job={job} />
@@ -240,7 +248,7 @@ export default function FindWorkPage() {
             </div>
 
             {/* All Jobs */}
-            {featuredJobs.map((job) => (
+            {jobs.map((job) => (
               <JobCard key={job.id} job={job} />
             ))}
           </div>
