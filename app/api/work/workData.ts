@@ -18,16 +18,9 @@
     urgent?: boolean;
     applicants: number;
   }
- 
-
-  interface Category {
-    name: string;
-    icon: React.ElementType;
-    count: number;
-  }
 
   
-  const applicationTips = [
+  export const applicationTips = [
     {
       title: "Complete your profile",
       description: "Profiles with photos get 3x more responses",
@@ -42,7 +35,7 @@
     },
   ];
   
-  const featuredJobs: JobListing[] = [
+  export const featuredJobs: JobListing[] = [
     {
       id: "1",
       title: "Experienced House Manager Needed",
