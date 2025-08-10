@@ -165,7 +165,7 @@ export default function MyJobsPage() {
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button className="btn btn-outline btn-sm">Contact</button>
+        <button className="btn btn-outline btn-sm bg-slate-900 text-white">Contact</button>
         {job.status === "active" && (
           <button className="btn btn-sm">Update Progress</button>
         )}
