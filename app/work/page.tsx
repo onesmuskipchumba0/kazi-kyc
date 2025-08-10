@@ -14,7 +14,7 @@ import {
   Shield,
   Utensils,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 interface JobListing {
   id: string;
@@ -144,12 +144,17 @@ function JobCard({ job }: { job: JobListing }) {
 }
 
 export default function FindWorkPage() {
-  const jobs = useWorkStore((state) => state.jobs)
-  const fetchJobs = useWorkStore((state) => state.fetchJobs)
+  const jobs = useWorkStore((state) => state.jobs);
+  const isLoading = useWorkStore((state) => state.isLoading);
+  const error = useWorkStore((state) => state.error);
+  const fetchJobs = useWorkStore((state) => state.fetchJobs);
 
-  useEffect(() => {fetchJobs()},[fetchJobs])
+  useEffect(() => {
+    // fetch once on mount
+    fetchJobs();
+  }, [fetchJobs]);
 
-  console.log(jobs)
+  const hasJobs = useMemo(() => jobs && jobs.length > 0, [jobs]);
   return (
     <div className="p-6">
       <div className="max-w-7xl mx-auto">
@@ -188,9 +193,19 @@ export default function FindWorkPage() {
 
         {/* Stats Row */}
         <div className="flex items-center gap-6 text-sm text-gray-500 mt-3">
-          <span>156 jobs available</span> •
-          <span>23 posted today</span> •
-          <span>8 urgent positions</span>
+          {isLoading ? (
+            <>
+              <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" /> •
+              <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" /> •
+              <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" />
+            </>
+          ) : (
+            <>
+              <span>{jobs.length} jobs available</span> •
+              <span>23 posted today</span> •
+              <span>{jobs.filter((j) => j.urgent).length} urgent positions</span>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
@@ -239,18 +254,37 @@ export default function FindWorkPage() {
                 <span>🔔</span> Urgent Positions
               </h3>
               <div className="space-y-3">
-                {jobs
-                  .filter((j) => j.urgent)
-                  .map((job) => (
-                    <UrgentJobRow key={job.id} job={job} />
-                  ))}
+                {isLoading ? (
+                  [...Array(3)].map((_, idx) => (
+                    <div key={idx} className="h-16 bg-orange-100 rounded-lg animate-pulse" />
+                  ))
+                ) : (
+                  jobs
+                    .filter((j) => j.urgent)
+                    .map((job) => <UrgentJobRow key={job.id} job={job} />)
+                )}
               </div>
             </div>
 
             {/* All Jobs */}
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
+            {isLoading ? (
+              [...Array(4)].map((_, idx) => (
+                <div key={idx} className="card bg-white shadow border border-slate-200">
+                  <div className="card-body p-5 animate-pulse">
+                    <div className="h-5 w-48 bg-gray-200 rounded" />
+                    <div className="mt-3 h-3 w-full bg-gray-100 rounded" />
+                    <div className="mt-2 h-3 w-2/3 bg-gray-100 rounded" />
+                    <div className="mt-4 h-24 w-full bg-gray-100 rounded" />
+                  </div>
+                </div>
+              ))
+            ) : hasJobs ? (
+              jobs.map((job) => <JobCard key={job.id} job={job} />)
+            ) : error ? (
+              <div className="alert alert-error text-white">{error}</div>
+            ) : (
+              <div className="text-gray-500">No jobs found.</div>
+            )}
           </div>
         </div>
       </div>

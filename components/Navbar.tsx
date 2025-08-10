@@ -18,13 +18,7 @@ import { useUser, SignOutButton } from '@clerk/nextjs';
 function Navbar() {
   const { user, isLoaded } = useUser();
 
-  if (!isLoaded) {
-    return (
-      <div className="flex w-full justify-center items-center py-2 h-screen">
-        <span className="loading loading-ring loading-lg"></span>
-      </div>
-    );
-  }
+  // Do not block rendering while Clerk loads; render navbar shell and show skeletons/placeholders
 
   return (
     <div className="fixed top-0 left-0 min-w-[250px] bg-white border-r border-gray-200 h-screen flex flex-col justify-between shadow-lg">
@@ -113,8 +107,17 @@ function Navbar() {
             </SignOutButton>
           </div>
         ) : (
-          <div className="flex justify-center items-center py-4">
-            <span className="loading loading-spinner loading-lg"></span>
+          <div className="flex flex-col space-y-3 animate-pulse">
+            <div className="flex items-center gap-3 p-2 rounded-lg bg-white shadow-sm border border-gray-100">
+              <div className="w-10 h-10 rounded-full bg-gray-200" />
+              <div className="flex-1 min-w-0">
+                <div className="h-3 w-24 bg-gray-200 rounded mb-2" />
+                <div className="h-2 w-32 bg-gray-100 rounded" />
+              </div>
+            </div>
+            <button className="btn btn-sm w-full bg-white text-gray-400 border border-gray-200 shadow-sm" disabled>
+              Loading...
+            </button>
           </div>
         )}
       </div>
