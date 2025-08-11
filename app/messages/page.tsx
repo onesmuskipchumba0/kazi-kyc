@@ -1,8 +1,8 @@
 // app/messages/page.tsx
 "use client";
 
-import { Plus, Search } from "lucide-react";
-import { useState } from "react";
+import { Plus, Search, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface Conversation {
   name: string;
@@ -156,7 +156,7 @@ export default function MessagesPage() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+      <div className="flex-1 flex flex-col p-4">
         {showNewChat ? (
           <NewChatForm onCreate={handleNewChat} onCancel={() => setShowNewChat(false)} />
         ) : selectedChat ? (
@@ -205,20 +205,102 @@ function EmptyState({ onNew }: { onNew: () => void }) {
 
 // Chat Window Component
 function ChatWindow({ chat }: { chat: Conversation }) {
+  interface Message {
+    id: string;
+    text: string;
+    sender: "me" | "them";
+    time: string;
+  }
+
+  const [messages, setMessages] = useState<Message[]>([
+    { id: "m1", text: chat.message, sender: "them", time: "10:12 AM" },
+    { id: "m2", text: "Hi! Happy to help. Could you share more details?", sender: "me", time: "10:13 AM" },
+  ]);
+  const [input, setInput] = useState("");
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [messages.length]);
+
+  const sendMessage = () => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    setMessages((prev) => [
+      ...prev,
+      { id: `m-${Date.now()}`, text: trimmed, sender: "me", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+    ]);
+    setInput("");
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
-    <div className="flex flex-col w-full h-full border border-base-200 rounded p-4 bg-base-100">
-      <h2 className="font-semibold text-lg">{chat.name}</h2>
-      <p className="text-sm text-base-content/60">{chat.role} · {chat.location}</p>
-      <div className="flex-1 overflow-y-auto mt-4 bg-base-200 p-4 rounded">
-        <p className="text-base-content/80">{chat.message}</p>
+    <div className="flex flex-col w-full h-full border border-base-200 rounded bg-base-100">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4 border-b border-base-200 sticky top-0 bg-base-100 z-10">
+        <div className="relative w-10 h-10 rounded-full bg-base-300 grid place-items-center text-sm font-semibold">
+          {chat.avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={chat.avatar} alt={chat.name} className="rounded-full w-full h-full" />
+          ) : (
+            chat.name.split(" ").map((n) => n[0]).join("")
+          )}
+          {chat.online && <span className="absolute bottom-0 right-0 block w-3 h-3 bg-green-500 rounded-full border-2 border-base-100" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold truncate">{chat.name}</p>
+          <p className="text-xs text-base-content/60 truncate">{chat.role} · {chat.location}</p>
+        </div>
       </div>
-      <div className="flex mt-4">
-        <input
-          type="text"
-          placeholder="Type a message..."
-          className="input input-bordered flex-1 rounded-r-none"
-        />
-        <button className="btn btn-primary rounded-l-none">Send</button>
+
+      {/* Messages */}
+      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-base-200">
+        {messages.map((m) => (
+          <div key={m.id} className={`chat ${m.sender === "me" ? "chat-end" : "chat-start"}`}>
+            {m.sender === "them" && (
+              <div className="chat-image avatar">
+                <div className="w-8 rounded-full bg-base-300 grid place-items-center text-[10px] font-semibold">
+                  {chat.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={chat.avatar} alt={chat.name} className="rounded-full w-full h-full" />
+                  ) : (
+                    chat.name.split(" ").map((n) => n[0]).join("")
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="chat-header mb-1 text-xs opacity-70">
+              {m.sender === "me" ? "You" : chat.name} <time className="ml-1">{m.time}</time>
+            </div>
+            <div className={`chat-bubble ${m.sender === "me" ? "chat-bubble-primary" : ""}`}>{m.text}</div>
+            <div className="chat-footer text-xs opacity-70">{m.sender === "me" ? "Sent" : ""}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Composer */}
+      <div className="p-3 border-t border-base-200">
+        <div className="join w-full">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={onKeyDown}
+            placeholder="Type a message"
+            className="input input-bordered join-item w-full"
+          />
+          <button onClick={sendMessage} className="btn btn-primary join-item">
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );
