@@ -290,7 +290,7 @@ function ChatWindow({ chat }: { chat: Conversation }) {
       </div>
 
       {/* Composer */}
-      <div className="p-3 border-t border-base-200">
+      <div className="p-3">
         <div className="join w-full">
           <input
             type="text"
@@ -298,7 +298,7 @@ function ChatWindow({ chat }: { chat: Conversation }) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Type a message"
-            className="input input-bordered join-item w-full"
+            className="input input-ghost join-item w-full border-none focus:outline-none focus:ring-0 focus:border-transparent shadow-none bg-base-100"
           />
           <button onClick={sendMessage} className="btn btn-primary join-item">
             <Send className="w-4 h-4" />
