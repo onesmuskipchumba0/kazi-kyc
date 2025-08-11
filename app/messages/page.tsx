@@ -252,7 +252,7 @@ function ChatWindow({ chat }: { chat: Conversation }) {
   };
 
   return (
-    <div className="flex flex-col w-full h-full border border-base-200 rounded bg-base-100">
+    <div className="flex flex-col w-full h-full mb-12 border-base-200 rounded bg-base-100">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-base-200 sticky top-0 bg-base-100 z-10">
         <div className="relative w-10 h-10 rounded-full bg-base-300 grid place-items-center text-sm font-semibold">
