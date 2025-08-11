@@ -173,7 +173,8 @@ export default function MessagesPage() {
 function EmptyState({ onNew }: { onNew: () => void }) {
   return (
     <>
-      <div className="bg-base-200 p-4 rounded-full">
+    <div className="flex flex-1 flex-col">
+      <div className="bg-base-200 p-4 rounded-full ">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="w-6 h-6 text-gray-500"
@@ -189,8 +190,10 @@ function EmptyState({ onNew }: { onNew: () => void }) {
           />
         </svg>
       </div>
+      <div className="flex flex-1 flex-col justify-center items-center">
+
       <h2 className="text-lg font-semibold mt-4">Your Messages</h2>
-      <p className="text-sm text-base-content/60 max-w-xs">
+      <p className="text-sm text-base-content/60 ">
         Send messages to workers and employers to discuss job opportunities.
       </p>
       <button
@@ -199,6 +202,9 @@ function EmptyState({ onNew }: { onNew: () => void }) {
       >
         <Plus size={16} /> Start New Conversation
       </button>
+      </div>
+
+    </div>
     </>
   );
 }
