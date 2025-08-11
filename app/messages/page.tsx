@@ -1,7 +1,7 @@
 // app/messages/page.tsx
 "use client";
 
-import { Plus, Search, Send } from "lucide-react";
+import { Plus, Search, Send, Phone, Video, MoreVertical, Info } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface Conversation {
@@ -213,8 +213,11 @@ function ChatWindow({ chat }: { chat: Conversation }) {
   }
 
   const [messages, setMessages] = useState<Message[]>([
-    { id: "m1", text: chat.message, sender: "them", time: "10:12 AM" },
-    { id: "m2", text: "Hi! Happy to help. Could you share more details?", sender: "me", time: "10:13 AM" },
+    { id: "m1", text: chat.message, sender: "them", time: "10:30 AM" },
+    { id: "m2", text: "I'm interested in your masonry services for my new house project.", sender: "them", time: "10:32 AM" },
+    { id: "m3", text: "Hello Sarah! Thank you for reaching out. I'd be happy to help with your project.", sender: "me", time: "10:35 AM" },
+    { id: "m4", text: "Could you tell me more about the scope of work you need done?", sender: "me", time: "10:36 AM" },
+    { id: "m5", text: "I need stone work for the exterior walls and some interior features. About 200 sq meters total.", sender: "them", time: "10:45 AM" },
   ]);
   const [input, setInput] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -257,33 +260,33 @@ function ChatWindow({ chat }: { chat: Conversation }) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold truncate">{chat.name}</p>
-          <p className="text-xs text-base-content/60 truncate">{chat.role} · {chat.location}</p>
+          <p className="text-xs text-success">Online</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button className="btn btn-ghost btn-sm" aria-label="Call"><Phone className="w-4 h-4" /></button>
+          <button className="btn btn-ghost btn-sm" aria-label="Video"><Video className="w-4 h-4" /></button>
+          <button className="btn btn-ghost btn-sm" aria-label="Info"><Info className="w-4 h-4" /></button>
+          <button className="btn btn-ghost btn-sm" aria-label="More"><MoreVertical className="w-4 h-4" /></button>
         </div>
       </div>
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-base-200">
-        {messages.map((m) => (
-          <div key={m.id} className={`chat ${m.sender === "me" ? "chat-end" : "chat-start"}`}>
-            {m.sender === "them" && (
-              <div className="chat-image avatar">
-                <div className="w-8 rounded-full bg-base-300 grid place-items-center text-[10px] font-semibold">
-                  {chat.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={chat.avatar} alt={chat.name} className="rounded-full w-full h-full" />
-                  ) : (
-                    chat.name.split(" ").map((n) => n[0]).join("")
-                  )}
+      <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-4 bg-base-200">
+        {messages.map((m) => {
+          const isMe = m.sender === "me";
+          return (
+            <div key={m.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[78%] ${isMe ? 'text-neutral-content' : 'text-base-content'}`}>
+                <div className={`rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-neutral' : 'bg-base-100 border border-base-200'}`}>
+                  {m.text}
+                </div>
+                <div className={`text-[10px] mt-1 ${isMe ? 'text-neutral-content/70 text-right pr-1' : 'text-base-content/50 pl-1'}`}>
+                  {m.time}
                 </div>
               </div>
-            )}
-            <div className="chat-header mb-1 text-xs opacity-70">
-              {m.sender === "me" ? "You" : chat.name} <time className="ml-1">{m.time}</time>
             </div>
-            <div className={`chat-bubble ${m.sender === "me" ? "chat-bubble-primary" : ""}`}>{m.text}</div>
-            <div className="chat-footer text-xs opacity-70">{m.sender === "me" ? "Sent" : ""}</div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Composer */}
