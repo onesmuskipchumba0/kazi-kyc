@@ -17,20 +17,20 @@ export default function HomePage() {
 
   if(!user || !isLoaded || posts.length == 0){
     return (
-    <div className="flex flex-1 items-center justify-center h-screen">
-      <span className="loading loading-spinner loading-lg"></span>
+    <div className="flex flex-1 items-center justify-center h-[60vh]">
+      <span className="loading loading-spinner loading-lg text-primary"></span>
     </div>
   )}
   return (
-    <div className="flex-1 py-6 pr-6 min-h-screen bg-gray- justify-center items-center w-full">
+    <div className="flex-1 py-6 min-h-screen justify-center items-center w-full">
       <div className="max-w-6xl mx-auto">
         {/* Header Section */}
-        <div className="flex items-center justify-between mb-6 px-4">
+        <div className="flex items-center justify-between mb-6 px-2">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.firstName}!</h1>
-            <p className="text-gray-600">Here's what's happening in your network</p>
+            <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
+            <p className="text-base-content/60">Here's what's happening in your network</p>
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-lg shadow hover:bg-slate-700 transition-colors">
+          <button className="btn btn-primary btn-sm md:btn-md">
             <PlusCircle className="w-4 h-4" />
             Share Work
           </button>
@@ -41,12 +41,14 @@ export default function HomePage() {
           {/* Main Feed - Takes 2 columns on large screens */}
           <div className="lg:col-span-2 space-y-6">
             {/* Recent Work Updates Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="card bg-base-100 shadow-sm border border-base-200">
+              <div className="card-body p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-blue-600" />
-                <h2 className="text-lg font-semibold text-gray-900">Recent Work Updates</h2>
+                <h2 className="text-lg font-semibold">Recent Work Updates</h2>
               </div>
-              <p className="text-gray-600">See what fellow workers are accomplishing</p>
+              <p className="text-base-content/60">See what fellow workers are accomplishing</p>
+              </div>
             </div>
 
             {/* Work Posts */}
@@ -58,7 +60,7 @@ export default function HomePage() {
 
             {/* Load More Button */}
             <div className="text-center pt-4">
-              <button className="px-6 py-2 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+              <button className="btn btn-outline">
                 Load More Posts
               </button>
             </div>
@@ -69,27 +71,29 @@ export default function HomePage() {
             <PeopleAround />
             
             {/* Quick Stats Card */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="border-b border-gray-200 pb-4 mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Quick Stats</h2>
+            <div className="card bg-base-100 shadow-sm border border-base-200">
+              <div className="card-body p-6">
+                <div className="border-b border-base-200 pb-4 mb-4">
+                  <h2 className="text-lg font-semibold">Quick Stats</h2>
+                </div>
+                <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-base-content/60">Profile Views</span>
+                  <span className="font-semibold">127</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base-content/60">Jobs Completed</span>
+                  <span className="font-semibold">18</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base-content/60">Rating</span>
+                  <span className="font-semibold">4.8 ⭐</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-base-content/60">Earnings (This Month)</span>
+                  <span className="font-semibold">KES 45,200</span>
+                </div>
               </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Profile Views</span>
-                  <span className="font-semibold text-gray-900">127</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Jobs Completed</span>
-                  <span className="font-semibold text-gray-900">18</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Rating</span>
-                  <span className="font-semibold text-gray-900">4.8 ⭐</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Earnings (This Month)</span>
-                  <span className="font-semibold text-gray-900">KES 45,200</span>
-                </div>
               </div>
             </div>
           </div>

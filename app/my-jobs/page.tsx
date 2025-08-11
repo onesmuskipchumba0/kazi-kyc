@@ -101,10 +101,7 @@ export default function MyJobsPage() {
 
   // Render job card
   const renderJobCard = (job: any) => (
-    <div
-      key={job.id}
-      className="bg-white p-4 rounded-lg shadow flex flex-col gap-2"
-    >
+    <div key={job.id} className="bg-base-100 p-4 rounded-lg shadow border border-base-200 flex flex-col gap-2">
       {/* Title and status */}
       <div className="flex justify-between items-center">
         <div>
@@ -115,15 +112,7 @@ export default function MyJobsPage() {
             <span>{job.rating}</span>
           </div>
         </div>
-        <span
-          className={`badge ${
-            job.status === "active"
-              ? "badge-info"
-              : job.status === "application"
-              ? "badge-warning"
-              : "badge-success"
-          }`}
-        >
+        <span className={`badge ${job.status === "active" ? "badge-info" : job.status === "application" ? "badge-warning" : "badge-success"}`}>
           {job.status === "active"
             ? "In Progress"
             : job.status === "application"
@@ -135,7 +124,7 @@ export default function MyJobsPage() {
       {/* Description and progress */}
       {job.status === "active" && (
         <>
-          <p className="text-sm text-gray-700">{job.description}</p>
+          <p className="text-sm text-base-content/80">{job.description}</p>
           <progress
             className="progress progress-primary w-full"
             value={job.progress}
@@ -145,12 +134,10 @@ export default function MyJobsPage() {
         </>
       )}
 
-      {job.status !== "active" && (
-        <p className="text-sm text-gray-700">{job.description}</p>
-      )}
+      {job.status !== "active" && <p className="text-sm text-base-content/80">{job.description}</p>}
 
       {/* Details */}
-      <div className="flex gap-2 flex-wrap text-sm text-gray-600">
+      <div className="flex gap-2 flex-wrap text-sm text-base-content/70">
         <span className="badge badge-outline">{job.category}</span>
         <span className="flex items-center gap-1">
           <MapPin className="w-4 h-4" /> {job.location}
@@ -161,54 +148,50 @@ export default function MyJobsPage() {
       </div>
 
       {/* Pay */}
-      <p className="text-green-600 font-semibold">KES {job.pay.toLocaleString()}/daily</p>
+      <p className="text-success font-semibold">KES {job.pay.toLocaleString()}/daily</p>
 
       {/* Actions */}
       <div className="flex gap-2">
-        <button className="btn btn-outline btn-sm bg-slate-900 text-white">Contact</button>
-        {job.status === "active" && (
-          <button className="btn btn-sm">Update Progress</button>
-        )}
+        <button className="btn btn-primary btn-sm">Contact</button>
+        {job.status === "active" && <button className="btn btn-outline btn-sm">Update Progress</button>}
       </div>
     </div>
   );
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold">My Jobs</h1>
-      <p className="text-gray-600 mb-6">
-        Manage your applications, active jobs, and work history
-      </p>
+      <p className="text-base-content/60 mb-6">Manage your applications, active jobs, and work history</p>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-lg p-4 shadow flex items-center gap-4">
+        <div className="bg-base-100 rounded-lg p-4 shadow border border-base-200 flex items-center gap-4">
           <div className="bg-blue-100 p-3 rounded-full">
             <Briefcase className="text-blue-600 w-6 h-6" />
           </div>
           <div>
             <span className="text-2xl font-bold">{activeCount}</span>
-            <p className="text-gray-600">Active Jobs</p>
+            <p className="text-base-content/60">Active Jobs</p>
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow flex items-center gap-4">
+        <div className="bg-base-100 rounded-lg p-4 shadow border border-base-200 flex items-center gap-4">
           <div className="bg-yellow-100 p-3 rounded-full">
             <Clock className="text-yellow-600 w-6 h-6" />
           </div>
           <div>
             <span className="text-2xl font-bold">{applicationsCount}</span>
-            <p className="text-gray-600">Pending Applications</p>
+            <p className="text-base-content/60">Pending Applications</p>
           </div>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow flex items-center gap-4">
+        <div className="bg-base-100 rounded-lg p-4 shadow border border-base-200 flex items-center gap-4">
           <div className="bg-green-100 p-3 rounded-full">
             <DollarSign className="text-green-600 w-6 h-6" />
           </div>
           <div>
-            <span className="text-2xl font-bold text-green-600">
+            <span className="text-2xl font-bold text-success">
               KES {totalEarnings.toLocaleString()}
             </span>
-            <p className="text-gray-600">Total Earnings</p>
+            <p className="text-base-content/60">Total Earnings</p>
           </div>
         </div>
       </div>
