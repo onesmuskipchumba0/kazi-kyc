@@ -1,7 +1,7 @@
 // app/messages/page.tsx
 "use client";
 
-import { Plus, Search, Send, Phone, Video, MoreVertical, Info } from "lucide-react";
+import { Plus, Search, Send, Phone, Video, MoreVertical, Info, User, Briefcase, MapPin } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 interface Conversation {
@@ -322,36 +322,93 @@ function NewChatForm({
   const [location, setLocation] = useState("");
 
   return (
-    <div className="w-full max-w-sm bg-base-100 border border-base-200 rounded p-4">
-      <h2 className="text-lg font-semibold mb-4">Start New Conversation</h2>
-      <input
-        type="text"
-        placeholder="Full Name"
-        className="input input-bordered w-full mb-2"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Role (e.g., Business Owner)"
-        className="input input-bordered w-full mb-2"
-        value={role}
-        onChange={(e) => setRole(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Location"
-        className="input input-bordered w-full mb-4"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-      />
-      <div className="flex gap-2">
-        <button className="btn btn-primary flex-1" onClick={() => { if (name && role && location) onCreate(name, role, location); }}>
-          Create
-        </button>
-        <button className="btn btn-ghost flex-1" onClick={onCancel}>
-          Cancel
-        </button>
+    <div className="card w-full max-w-md bg-base-100 border border-base-200 shadow">
+      <div className="card-body gap-4">
+        <div>
+          <h2 className="card-title">Start New Conversation</h2>
+          <p className="text-sm text-base-content/60">Create a chat with a client or worker. Fill in the details below.</p>
+        </div>
+
+        {/* Avatar Preview */}
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-base-200 grid place-items-center text-sm font-semibold">
+            {name.trim()
+              ? name.trim().split(" ").slice(0, 2).map((n) => n[0]).join("")
+              : <User className="w-5 h-5 text-base-content/60" />}
+          </div>
+          <div className="text-xs text-base-content/60">Avatar will be generated from the name</div>
+        </div>
+
+        {/* Name */}
+        <label className="form-control w-full">
+          <div className="label"><span className="label-text">Full Name</span></div>
+          <div className="relative">
+            <User className="w-4 h-4 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="e.g., Sarah Wanjiku"
+              className="input input-bordered w-full pl-9"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+        </label>
+
+        {/* Role */}
+        <label className="form-control w-full">
+          <div className="label"><span className="label-text">Role</span></div>
+          <div className="relative">
+            <Briefcase className="w-4 h-4 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="e.g., Home Owner, Project Manager"
+              className="input input-bordered w-full pl-9"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {['Home Owner','Business Owner','Construction Manager','Project Manager'].map((s) => (
+              <button key={s} type="button" className="btn btn-xs btn-outline" onClick={() => setRole(s)}>
+                {s}
+              </button>
+            ))}
+          </div>
+        </label>
+
+        {/* Location */}
+        <label className="form-control w-full">
+          <div className="label"><span className="label-text">Location</span></div>
+          <div className="relative">
+            <MapPin className="w-4 h-4 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="e.g., Nairobi"
+              className="input input-bordered w-full pl-9"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {['Nairobi','Mombasa','Kisumu','Nakuru','Kiambu'].map((city) => (
+              <button key={city} type="button" className="btn btn-xs btn-ghost" onClick={() => setLocation(city)}>
+                {city}
+              </button>
+            ))}
+          </div>
+        </label>
+
+        {/* Actions */}
+        <div className="card-actions justify-end pt-2">
+          <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+          <button
+            className="btn btn-primary"
+            disabled={!name.trim() || !role.trim() || !location.trim()}
+            onClick={() => { if (name && role && location) onCreate(name, role, location); }}
+          >
+            Create Chat
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -75,8 +75,8 @@ export default function HomePage() {
               <div className="card-body p-6">
                 <div className="border-b border-base-200 pb-4 mb-4">
                   <h2 className="text-lg font-semibold">Quick Stats</h2>
-                </div>
-                <div className="space-y-4">
+              </div>
+              <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-base-content/60">Profile Views</span>
                   <span className="font-semibold">127</span>
@@ -93,7 +93,7 @@ export default function HomePage() {
                   <span className="text-base-content/60">Earnings (This Month)</span>
                   <span className="font-semibold">KES 45,200</span>
                 </div>
-              </div>
+                </div>
               </div>
             </div>
           </div>
