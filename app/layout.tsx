@@ -27,12 +27,13 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en" data-theme="light">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 min-h-screen`}
-        >
+      <html lang="en" data-theme="corporate">
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base-200 min-h-screen`}>
           <Navbar />
-          <main className="pt-8 px-4 ml-[250px]">{children}</main>
+          {/* Content wrapper adjusts for sidebar and topbar */}
+          <main className="pt-16 lg:pt-8 px-4 lg:ml-[280px] max-w-7xl mx-auto w-full">
+            {children}
+          </main>
         </body>
       </html>
     </ClerkProvider>

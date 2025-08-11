@@ -156,28 +156,26 @@ export default function FindWorkPage() {
 
   const hasJobs = useMemo(() => jobs && jobs.length > 0, [jobs]);
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <h1 className="text-2xl font-bold">Find Work Opportunities</h1>
-        <p className="text-gray-500">
-          Discover jobs that match your skills and location
-        </p>
+        <p className="text-base-content/60">Discover jobs that match your skills and location</p>
 
         {/* Search + Filters */}
-        <div className="flex items-center gap-4 mt-6 bg-white p-4 rounded-xl shadow-sm">
+        <div className="flex items-center gap-4 mt-6 bg-base-100 p-4 rounded-xl shadow-sm border border-base-200">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
               placeholder="Search for jobs, skills, or keywords..."
               aria-label="Search jobs"
-              className="input w-full pl-10 rounded-full bg-gray-100 border-0 focus:outline-none focus:ring-2 focus:ring-slate-300 placeholder:text-gray-400"
+              className="input w-full pl-10 rounded-full bg-base-200 border-0 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-base-content/50"
             />
           </div>
           <select
             aria-label="Location filter"
-            className="select w-48 rounded-full bg-gray-100 border-0 focus:outline-none focus:ring-2 focus:ring-slate-300"
+            className="select w-48 rounded-full bg-base-200 border-0 focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option>All Locations</option>
             <option>Westlands</option>
@@ -192,7 +190,7 @@ export default function FindWorkPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="flex items-center gap-6 text-sm text-gray-500 mt-3">
+        <div className="flex items-center gap-6 text-sm text-base-content/60 mt-3">
           {isLoading ? (
             <>
               <span className="h-4 w-28 bg-gray-200 rounded animate-pulse" /> •
@@ -212,7 +210,7 @@ export default function FindWorkPage() {
           {/* Left Sidebar */}
           <div className="space-y-6 lg:col-span-1">
             {/* Categories */}
-            <div className="card bg-white shadow border border-slate-200">
+            <div className="card bg-base-100 shadow border border-base-200">
               <div className="card-body">
                 <h2 className="card-title mb-3">Job Categories</h2>
                 {categories.map((c) => (
@@ -230,16 +228,16 @@ export default function FindWorkPage() {
             </div>
 
             {/* Application Tips */}
-            <div className="card bg-white shadow border border-slate-200">
+            <div className="card bg-base-100 shadow border border-base-200">
               <div className="card-body">
                 <h2 className="card-title mb-3">Application Tips</h2>
                 {applicationTips.map((tip) => (
                   <div
                     key={tip.title}
-                    className="p-3 rounded-lg bg-gray-50 mb-2"
+                    className="p-3 rounded-lg bg-base-200 mb-2"
                   >
                     <h4 className="font-medium text-sm">{tip.title}</h4>
-                    <p className="text-xs text-gray-500">{tip.description}</p>
+                    <p className="text-xs text-base-content/60">{tip.description}</p>
                   </div>
                 ))}
               </div>
@@ -269,7 +267,7 @@ export default function FindWorkPage() {
             {/* All Jobs */}
             {isLoading ? (
               [...Array(4)].map((_, idx) => (
-                <div key={idx} className="card bg-white shadow border border-slate-200">
+                <div key={idx} className="card bg-base-100 shadow border border-base-200">
                   <div className="card-body p-5 animate-pulse">
                     <div className="h-5 w-48 bg-gray-200 rounded" />
                     <div className="mt-3 h-3 w-full bg-gray-100 rounded" />

@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   FaHome,
@@ -11,117 +11,164 @@ import {
   FaUser,
   FaCog,
   FaLock,
+  FaBars,
 } from 'react-icons/fa';
 import Image from 'next/image';
 import { useUser, SignOutButton } from '@clerk/nextjs';
+import { usePathname } from 'next/navigation';
 
 function Navbar() {
-  const { user, isLoaded } = useUser();
+  const { user } = useUser();
+  const pathname = usePathname();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
 
-  // Do not block rendering while Clerk loads; render navbar shell and show skeletons/placeholders
+  const navItems = useMemo(
+    () => [
+      { href: '/', label: 'Home', icon: FaHome },
+      { href: '/work', label: 'Find Work', icon: FaSearch },
+      { href: '/my-jobs', label: 'My Jobs', icon: FaBriefcase },
+      { href: '/messages', label: 'Messages', icon: FaEnvelope },
+      { href: '/network', label: 'Network', icon: FaUsers },
+      { href: '/notifications', label: 'Notifications', icon: FaBell },
+      { href: '/profile', label: 'Profile', icon: FaUser },
+      { href: '/settings', label: 'Settings', icon: FaCog },
+    ],
+    []
+  );
+
+  const renderMenu = (onNavigate?: () => void) => (
+    <ul className="menu px-2 py-4 gap-1">
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = pathname.startsWith(item.href);
+        return (
+          <li key={item.href}>
+            <Link
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg transition-colors duration-200 ${
+                isActive ? 'bg-base-200 font-semibold' : 'hover:bg-base-200'
+              }`}
+              aria-current={isActive ? 'page' : undefined}
+              onClick={onNavigate}
+            >
+              <Icon className="text-base-content/70" /> {item.label}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
+  const renderUser = (
+    <div className="px-4 py-4 border-t border-base-200 bg-base-100">
+      {user ? (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-base-100 shadow-sm border border-base-200">
+            <Image
+              src={user.imageUrl}
+              width={40}
+              height={40}
+              className="rounded-full border-2 border-base-200"
+              alt="User"
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold truncate">
+                {user.fullName || 'User'}
+              </p>
+              <p className="text-xs text-base-content/50">Mason • Nairobi</p>
+            </div>
+          </div>
+          <SignOutButton>
+            <button className="btn btn-outline btn-sm w-full flex justify-between items-center">
+              <span>Sign Out</span>
+              <FaLock className="text-warning" />
+            </button>
+          </SignOutButton>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3 animate-pulse">
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-base-100 shadow-sm border border-base-200">
+            <div className="w-10 h-10 rounded-full bg-base-200" />
+            <div className="flex-1 min-w-0">
+              <div className="h-3 w-24 bg-base-200 rounded mb-2" />
+              <div className="h-2 w-32 bg-base-200/70 rounded" />
+            </div>
+          </div>
+          <button className="btn btn-outline btn-sm w-full" disabled>
+            Loading...
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="fixed top-0 left-0 min-w-[250px] bg-white border-r border-gray-200 h-screen flex flex-col justify-between shadow-lg">
-      <div>
-        {/* Logo */}
-        <div className="flex items-center gap-2 px-4 py-4 border-b border-gray-100">
-          <div className="w-10 h-10 bg-black rounded-lg flex items-center justify-center text-white font-bold text-lg shadow-md">
-            K
+    <>
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex lg:fixed top-0 left-0 w-[280px] bg-base-100 border-r border-base-200 h-screen flex-col justify-between shadow-sm z-30">
+        <div>
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-4 py-4 border-b border-base-200">
+            <div className="w-10 h-10 rounded-lg bg-neutral text-neutral-content grid place-items-center text-lg font-bold">
+              K
+            </div>
+            <div>
+              <p className="font-semibold">KaziKYC</p>
+              <p className="text-xs text-base-content/50">Connect & Work</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold text-sm">KaziKYC</p>
-            <p className="text-xs text-gray-500">Connect & Work</p>
-          </div>
+          {renderMenu()}
         </div>
-
-        {/* Menu */}
-        <ul className="menu px-2 space-y-1 py-4">
-          <li>
-            <Link href="/" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaHome className="text-gray-600" /> Home
-            </Link>
-          </li>
-          <li>
-            <Link href="/work" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaSearch className="text-gray-600" /> Find Work
-            </Link>
-          </li>
-          <li>
-            <Link href="/my-jobs" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaBriefcase className="text-gray-600" /> My Jobs
-            </Link>
-          </li>
-          <li>
-            <Link href="/messages" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaEnvelope className="text-gray-600" /> Messages
-            </Link>
-          </li>
-          <li>
-            <Link href="/network" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaUsers className="text-gray-600" /> Network
-            </Link>
-          </li>
-          <li>
-            <Link href="/notifications" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaBell className="text-gray-600" /> Notifications
-            </Link>
-          </li>
-          <li>
-            <Link href="/profile" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaUser className="text-gray-600" /> Profile
-            </Link>
-          </li>
-          <li>
-            <Link href="/settings" className="flex items-center gap-3 hover:bg-gray-80 rounded-lg transition-colors duration-200">
-              <FaCog className="text-gray-600" /> Settings
-            </Link>
-          </li>
-        </ul>
+        {renderUser}
       </div>
 
-      {/* User Footer */}
-      <div className="px-4 py-4 border-t border-gray-200 bg-gray-50 pb-16">
-        {user ? (
-          <div className="flex flex-col space-y-3">
-            <div className="flex items-center gap-3 p-2 rounded-lg bg-white shadow-sm border border-gray-100">
-              <Image
-                src={user.imageUrl}
-                width={40}
-                height={40}
-                className="rounded-full border-2 border-gray-200"
-                alt="User"
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                  {user.fullName || 'John Mwangi'}
-                </p>
-                <p className="text-xs text-slate-400 font-medium">Mason • Nairobi</p>
-              </div>
-            </div>
-            
-            <SignOutButton>
-              <button className="btn btn-sm w-full bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 shadow-sm flex justify-between items-center transition-all duration-200 hover:shadow-md">
-                <span>Sign Out</span>
-                <FaLock className="text-orange-500" />
-              </button>
-            </SignOutButton>
-          </div>
-        ) : (
-          <div className="flex flex-col space-y-3 animate-pulse">
-            <div className="flex items-center gap-3 p-2 rounded-lg bg-white shadow-sm border border-gray-100">
-              <div className="w-10 h-10 rounded-full bg-gray-200" />
-              <div className="flex-1 min-w-0">
-                <div className="h-3 w-24 bg-gray-200 rounded mb-2" />
-                <div className="h-2 w-32 bg-gray-100 rounded" />
-              </div>
-            </div>
-            <button className="btn btn-sm w-full bg-white text-gray-400 border border-gray-200 shadow-sm" disabled>
-              Loading...
+      {/* Mobile Topbar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 bg-base-100 border-b border-base-200 z-40">
+        <div className="navbar px-4">
+          <div className="flex-1">
+            <button
+              aria-label="Open menu"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setIsMobileOpen(true)}
+            >
+              <FaBars />
             </button>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-md bg-neutral text-neutral-content grid place-items-center text-sm font-bold">
+              K
+            </div>
+            <span className="font-semibold">KaziKYC</span>
+          </div>
+          <div className="flex-1" />
+        </div>
       </div>
-    </div>
+
+      {/* Mobile Drawer */}
+      {isMobileOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/40 z-40"
+            onClick={() => setIsMobileOpen(false)}
+          />
+          <div className="fixed top-0 left-0 h-screen w-[280px] bg-base-100 border-r border-base-200 shadow-xl z-50 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center gap-3 px-4 py-4 border-b border-base-200">
+                <div className="w-10 h-10 rounded-lg bg-neutral text-neutral-content grid place-items-center text-lg font-bold">
+                  K
+                </div>
+                <div>
+                  <p className="font-semibold">KaziKYC</p>
+                  <p className="text-xs text-base-content/50">Connect & Work</p>
+                </div>
+              </div>
+              {renderMenu(() => setIsMobileOpen(false))}
+            </div>
+            {renderUser}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
