@@ -2,86 +2,19 @@
 
 import { useState } from "react";
 import { MoreVertical, MapPin, Star, Search } from "lucide-react";
+import { networkData } from "../api/work/networkData";
+import { FaCross, FaPlus, FaUserPlus } from "react-icons/fa";
+import { FaMessage, FaX } from "react-icons/fa6";
 
-type Person = {
-  id: number;
-  name: string;
-  role: string;
-  location: string;
-  rating: number;
-  rate?: string | null;
-  experience: string;
-  connections: string;
-  skills: string[];
-  initials?: string;
-  image?: string;
-};
 
 const TABS = ["My Network", "Requests", "Discover People"] as const;
 type Tab = (typeof TABS)[number];
-
-const data: Record<Tab, Person[]> = {
-  "My Network": [
-    {
-      id: 1,
-      name: "Sarah Wanjiku",
-      role: "House Manager",
-      location: "Kiambu",
-      rating: 4.8,
-      rate: "KSh 400/hour",
-      experience: "5 years exp",
-      connections: "12 mutual connections",
-      skills: ["Cleaning", "Cooking", "Child Care"],
-      initials: "SW",
-    },
-    {
-      id: 2,
-      name: "David Kimani",
-      role: "Construction Supervisor",
-      location: "Nairobi",
-      rating: 4.9,
-      rate: "KSh 800/hour",
-      experience: "8 years exp",
-      connections: "8 mutual connections",
-      skills: ["Project Management", "Quality Control", "Team Leadership"],
-      image: "https://i.pravatar.cc/100?img=12",
-    },
-  ],
-  Requests: [
-    {
-      id: 3,
-      name: "James Otieno",
-      role: "Driver",
-      location: "Nakuru",
-      rating: 4.6,
-      rate: "KSh 300/hour",
-      experience: "4 years exp",
-      connections: "3 mutual connections",
-      skills: ["Driving", "Logistics"],
-      initials: "JO",
-    },
-  ],
-  "Discover People": [
-    {
-      id: 4,
-      name: "Mary Achieng",
-      role: "Event Planner",
-      location: "Kisumu",
-      rating: 4.8,
-      rate: "KSh 1000/hour",
-      experience: "7 years exp",
-      connections: "10 mutual connections",
-      skills: ["Event Planning", "Budgeting", "Customer Service"],
-      image: "https://i.pravatar.cc/100?img=8",
-    },
-  ],
-};
 
 export default function NetworkPage() {
   const [activeTab, setActiveTab] = useState<Tab>("My Network");
   const [query, setQuery] = useState("");
 
-  const people = data[activeTab];
+  const people = networkData[activeTab];
   const filtered = people.filter((person) =>
     person.name.toLowerCase().includes(query.toLowerCase())
   );
@@ -108,7 +41,7 @@ export default function NetworkPage() {
                 : "text-gray-600 hover:bg-gray-100"
             }`}
           >
-            {tab} ({data[tab].length})
+            {tab} ({networkData[tab].length})
           </button>
         ))}
       </div>
@@ -186,13 +119,16 @@ export default function NetworkPage() {
                 {/* Action buttons */}
                 {activeTab === "Requests" && (
                   <div className="flex gap-2 mt-3">
-                    <button className="px-3 py-1 text-xs rounded-full hover:bg-green-200 bg-green-100 text-green-700">
-                      Accept
+                    <button className="btn bg-slate-900 text-white px-3 py-1 text-xs rounded-md">
+                      <FaPlus/>
+                      <span>Accept</span>
                     </button>
-                    <button className="px-3 py-1 text-xs rounded-full hover:bg-red-200 bg-red-100 text-red-700">
-                      Refuse
+                    <button className="btn px-3 py-1 text-xs rounded-md hover:bg-red-200 bg-red-100 text-red-700">
+                      <FaX/>
+                      <span>Refuse</span>
                     </button>
-                    <button className="px-3 py-1 text-xs rounded-full hover:bg-blue-200 bg-blue-100 text-blue-700">
+                    <button className="btn px-3 py-1 text-xs rounded-md hover:bg-blue-200 bg-blue-100 text-blue-700">
+                      <FaMessage/>
                       Message
                     </button>
                   </div>
@@ -200,10 +136,12 @@ export default function NetworkPage() {
 
                 {activeTab === "Discover People" && (
                   <div className="flex gap-2 mt-3">
-                    <button className="px-3 py-1 text-xs rounded-full bg-gray-200 text-gray-700">
+                    <button className="btn px-3 py-1 text-xs rounded-md bg-gray-700 text-gray-200">
+                      <FaUserPlus/>
                       Connect
                     </button>
-                    <button className="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+                    <button className="btn px-3 py-1 text-xs rounded-md bg-blue-100 text-blue-700">
+                      <FaMessage/>
                       Message
                     </button>
                   </div>
