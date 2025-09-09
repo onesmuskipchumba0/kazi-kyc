@@ -28,6 +28,7 @@ function SignInComponent() {
         <div className="w-full max-w-[500px] px-4">
           { loaded ? (
             <SignIn
+            routing='hash'
               appearance={{
                 elements: {
                   card: 'w-full h-[60vh] shadow-lg rounded-lg',
