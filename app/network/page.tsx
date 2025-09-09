@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { MoreVertical, MapPin, Star, Search } from "lucide-react";
 import { networkData } from "../api/work/networkData";
+import { FaCross, FaPlus } from "react-icons/fa";
+import { FaMessage, FaX } from "react-icons/fa6";
 
 
 const TABS = ["My Network", "Requests", "Discover People"] as const;
@@ -117,13 +119,16 @@ export default function NetworkPage() {
                 {/* Action buttons */}
                 {activeTab === "Requests" && (
                   <div className="flex gap-2 mt-3">
-                    <button className="px-3 py-1 text-xs rounded-full hover:bg-green-200 bg-green-100 text-green-700">
-                      Accept
+                    <button className="btn bg-slate-900 text-white px-3 py-1 text-xs rounded-md">
+                      <FaPlus/>
+                      <span>Accept</span>
                     </button>
-                    <button className="px-3 py-1 text-xs rounded-full hover:bg-red-200 bg-red-100 text-red-700">
-                      Refuse
+                    <button className="btn px-3 py-1 text-xs rounded-md hover:bg-red-200 bg-red-100 text-red-700">
+                      <FaX/>
+                      <span>Refuse</span>
                     </button>
-                    <button className="px-3 py-1 text-xs rounded-full hover:bg-blue-200 bg-blue-100 text-blue-700">
+                    <button className="btn px-3 py-1 text-xs rounded-md hover:bg-blue-200 bg-blue-100 text-blue-700">
+                      <FaMessage/>
                       Message
                     </button>
                   </div>
