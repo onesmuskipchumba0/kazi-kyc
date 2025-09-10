@@ -15,8 +15,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
             <h2 className="card-title">Account Type</h2>
             <p className="text-gray-600 mb-4">Choose how you want to use KazikYC</p>
             
-            <div className="flex flex-col space-y-4">
-              <div className="flex items-start">
+            <div className={`flex flex-col space-y-4`}>
+              <div className={`flex items-start ${mason.profileType === "worker" && 'border border-accent rounded-md p-3'}`}>
                 <div className="mr-4 mt-1">
                   <div className={`rounded-full ${mason.profileType === 'worker' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'} w-8 h-8 flex items-center justify-center`}>1</div>
                 </div>
@@ -29,7 +29,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
                 </div>
               </div>
               
-              <div className="flex items-start">
+              <div  className={`flex items-start ${mason.profileType === "employer" && 'border border-primary rounded-md p-3'}`}>
                 <div className="mr-4 mt-1">
                   <div className={`rounded-full ${mason.profileType === 'employer' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'} w-8 h-8 flex items-center justify-center`}>2</div>
                 </div>
