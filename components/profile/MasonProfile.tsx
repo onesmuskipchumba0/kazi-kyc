@@ -56,17 +56,32 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
       {/* Profile Section */}
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* Profile Header */}
-          <div className="bg-blue-600 text-white p-6">
-            <h1 className="text-3xl font-bold">{mason.name}</h1>
-            <div className="flex items-center mt-2 flex-wrap">
-              <FaBriefcase className="mr-2" />
-              <span>{mason.title}</span>
-              <span className="mx-2">•</span>
-              <FaMapMarkerAlt className="mr-2" />
-              <span>{mason.location}</span>
-              <span className="mx-2">•</span>
-              <span>Worker</span>
+          {/* Profile Header with Avatar */}
+          <div className="bg-blue-600 text-white p-6 relative">
+            <div className="flex items-center">
+              {mason.avatarUrl && (
+                <div className="mr-4">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white">
+                    <img 
+                      src={mason.avatarUrl} 
+                      alt={mason.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              )}
+              <div>
+                <h1 className="text-3xl font-bold">{mason.name}</h1>
+                <div className="flex items-center mt-2 flex-wrap">
+                  <FaBriefcase className="mr-2" />
+                  <span>{mason.title}</span>
+                  <span className="mx-2">•</span>
+                  <FaMapMarkerAlt className="mr-2" />
+                  <span>{mason.location}</span>
+                  <span className="mx-2">•</span>
+                  <span>Worker</span>
+                </div>
+              </div>
             </div>
           </div>
 

@@ -1,7 +1,6 @@
-"use client"
 import React from 'react';
 import { FaStar } from 'react-icons/fa';
-import { reviews } from'@/app/api/profile/dummyData';
+import { reviews } from '@/app/api/profile/dummyData';
 
 const ReviewsTab: React.FC = () => {
   return (
@@ -11,9 +10,20 @@ const ReviewsTab: React.FC = () => {
         {reviews.map((review) => (
           <div key={review.id} className="card bg-base-100 shadow-md p-6">
             <div className="flex justify-between items-start">
-              <div>
-                <h3 className="font-semibold">{review.clientName}</h3>
-                <p className="text-gray-600">{review.project}</p>
+              <div className="flex items-center">
+                {review.avatarUrl && (
+                  <div className="w-12 h-12 rounded-full overflow-hidden mr-4">
+                    <img 
+                      src={review.avatarUrl} 
+                      alt={review.clientName}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-semibold">{review.clientName}</h3>
+                  <p className="text-gray-600">{review.project}</p>
+                </div>
               </div>
               <div className="flex items-center">
                 {Array.from({ length: 5 }).map((_, i) => (
