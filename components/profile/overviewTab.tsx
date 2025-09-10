@@ -1,10 +1,8 @@
-"use client"
 import React from 'react';
-import { FaPhone, FaEnvelope, FaMapMarkerAlt } from 'react-icons/fa';
-import { Mason } from '@/app/api/types';
+import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaBuilding, FaUsers } from 'react-icons/fa';
 
 interface OverviewTabProps {
-  mason: Mason;
+  mason: any;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
@@ -20,7 +18,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
             <div className="flex flex-col space-y-4">
               <div className="flex items-start">
                 <div className="mr-4 mt-1">
-                  <div className="rounded-full bg-blue-100 text-blue-600 w-8 h-8 flex items-center justify-center">1</div>
+                  <div className={`rounded-full ${mason.profileType === 'worker' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'} w-8 h-8 flex items-center justify-center`}>1</div>
                 </div>
                 <div>
                   <h3 className="font-semibold">As a Worker</h3>
@@ -33,7 +31,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
               
               <div className="flex items-start">
                 <div className="mr-4 mt-1">
-                  <div className="rounded-full bg-gray-200 text-gray-600 w-8 h-8 flex items-center justify-center">2</div>
+                  <div className={`rounded-full ${mason.profileType === 'employer' ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-600'} w-8 h-8 flex items-center justify-center`}>2</div>
                 </div>
                 <div>
                   <h3 className="font-semibold">As a Employer</h3>
@@ -53,6 +51,18 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
             
             <div className="space-y-4">
               <div>
+                <h3 className="font-semibold">Profile Type</h3>
+                <p className="text-gray-600 capitalize">{mason.profileType}</p>
+              </div>
+              
+              {mason.profileType === 'employer' && mason.companyName && (
+                <div>
+                  <h3 className="font-semibold">Company Name</h3>
+                  <p className="text-gray-600">{mason.companyName}</p>
+                </div>
+              )}
+              
+              <div>
                 <h3 className="font-semibold">Experience</h3>
                 <p className="text-gray-600">{mason.experience}</p>
               </div>
@@ -62,10 +72,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
                 <p className="text-gray-600">{mason.availability}</p>
               </div>
               
-              <div>
-                <h3 className="font-semibold">Hourly Rate</h3>
-                <p className="text-gray-600">{mason.hourlyRate}</p>
-              </div>
+              {mason.profileType === 'worker' && (
+                <div>
+                  <h3 className="font-semibold">Hourly Rate</h3>
+                  <p className="text-gray-600">{mason.hourlyRate}</p>
+                </div>
+              )}
               
               <div>
                 <h3 className="font-semibold">Response Rate</h3>
@@ -75,7 +87,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
               <div>
                 <h3 className="font-semibold">Languages</h3>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {mason.languages.map((language, index) => (
+                  {mason.languages.map((language: string, index: number) => (
                     <span key={index} className="badge badge-primary">{language}</span>
                   ))}
                 </div>
@@ -106,6 +118,20 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
                 <FaMapMarkerAlt className="text-gray-500 mr-3" />
                 <span>{mason.contact.location}</span>
               </div>
+              
+              {mason.profileType === 'employer' && mason.companyName && (
+                <div className="flex items-center">
+                  <FaBuilding className="text-gray-500 mr-3" />
+                  <span>{mason.companyName}</span>
+                </div>
+              )}
+              
+              {mason.profileType === 'employer' && mason.employeesCount > 0 && (
+                <div className="flex items-center">
+                  <FaUsers className="text-gray-500 mr-3" />
+                  <span>{mason.employeesCount} employees</span>
+                </div>
+              )}
             </div>
             
             <button className="btn btn-primary mt-4">
@@ -116,10 +142,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({ mason }) => {
         
         <div className="card bg-base-100 shadow-md">
           <div className="card-body">
-            <h2 className="card-title">Core Skills</h2>
+            <h2 className="card-title">
+              {mason.profileType === 'worker' ? 'Core Skills' : 'Services Offered'}
+            </h2>
             
             <div className="flex flex-wrap gap-2">
-              {mason.coreSkills.map((skill, index) => (
+              {mason.coreSkills.map((skill: string, index: number) => (
                 <span key={index} className="badge badge-outline badge-primary p-3">{skill}</span>
               ))}
             </div>
