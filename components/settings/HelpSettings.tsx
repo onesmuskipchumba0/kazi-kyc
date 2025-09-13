@@ -189,10 +189,10 @@ const HelpSupport = () => {
               
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text text-lg font-semibold">Your Message</span>
+                  <span className="label-text text-lg font-semibold mr-12">Your Message</span>
                 </label>
                 <textarea 
-                  className="textarea textarea-bordered textarea-lg h-40 text-lg p-4" 
+                  className="textarea textarea-lg h-40 text-lg p-4" 
                   placeholder="Please describe your issue or question in detail..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
