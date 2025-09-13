@@ -4,7 +4,6 @@ import {
   Bell,
   Shield,
   Settings as SettingsIcon,
-  Lock,
   HelpCircle,
   LucideIcon,
 } from 'lucide-react';
@@ -27,7 +26,6 @@ const SettingsLayout = ({ activeTab, onTabChange, children }: SettingsLayoutProp
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'privacy', label: 'Privacy & Safety', icon: Shield },
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
-    { id: 'security', label: 'Security', icon: Lock },
     { id: 'help', label: 'Help & Support', icon: HelpCircle },
   ];
 
