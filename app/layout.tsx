@@ -28,7 +28,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider publishableKey="pk_test_Y2FzdWFsLXNwaWRlci0yNC5jbGVyay5hY2NvdW50cy5kZXYk">
-      <html lang="en" data-theme="corporate">
+      <html lang="en" data-theme="cupcake">
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-base-200 min-h-screen`}>
           <SignedIn>
           <Navbar />
