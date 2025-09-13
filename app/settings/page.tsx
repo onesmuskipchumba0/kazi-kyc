@@ -6,7 +6,6 @@ import AccountSettings from '@/components/settings/AccountSettings';
 import NotificationSettings from '@/components/settings/NotificationSettings';
 import PrivacySettings from '@/components/settings/PrivacySettings';
 import PreferencesSettings from '@/components/settings/PreferencesSettings';
-import SecuritySettings from '@/components/settings/SecuritySettings';
 import HelpSettings from '@/components/settings/HelpSettings';
 
 const SettingsPage = () => {
@@ -22,8 +21,6 @@ const SettingsPage = () => {
         return <PrivacySettings />;
       case 'preferences':
         return <PreferencesSettings />;
-      case 'security':
-        return <SecuritySettings />;
       case 'help':
         return <HelpSettings />;
       default:
