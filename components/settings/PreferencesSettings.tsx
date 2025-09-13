@@ -1,23 +1,78 @@
-// components/AppPreferences.jsx
+// components/AppPreferences.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTheme } from '@/context/ThemeContext';
 
 const AppPreferences = () => {
-  const [language, setLanguage] = useState('English');
-  const [currency, setCurrency] = useState('KSh');
-  const [timezone, setTimezone] = useState('GMT+3');
-  const [autoAccept, setAutoAccept] = useState(true);
-  const [emailFrequency, setEmailFrequency] = useState('daily');
+  const [showToast, setShowToast] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  const { theme, changeTheme, preferences, setPreferences } = useTheme();
 
   const languages = ['English', 'Swahili', 'French', 'Spanish', 'German', 'Chinese'];
   const currencies = ['KSh (Kenyan Shilling)', 'USD (US Dollar)', 'EUR (Euro)', 'GBP (British Pound)', 'JPY (Japanese Yen)'];
   const timezones = ['East Africa Time (GMT+3)', 'Central Africa Time (GMT+2)', 'West Africa Time (GMT+1)', 'Greenwich Mean Time (GMT)', 'Central European Time (GMT+1)'];
   const frequencies = ['Never', 'Daily Summary', 'Weekly Summary', 'Monthly Summary'];
+  const themes = ['light', 'dark', 'retro', 'cyberpunk', 'valentine', 'aqua'];
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const savePreferences = () => {
+    // Preferences are already saved in context, just show toast
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const resetPreferences = () => {
+    const defaultPreferences = {
+      language: 'English',
+      currency: 'KSh',
+      timezone: 'GMT+3',
+      autoAccept: true,
+      emailFrequency: 'daily',
+      theme: 'light'
+    };
+    
+    setPreferences(defaultPreferences);
+    changeTheme('light');
+    
+    // Show reset notification
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handlePreferenceChange = (key: keyof typeof preferences, value: any) => {
+    setPreferences({
+      ...preferences,
+      [key]: value
+    });
+  };
+
+  if (!isMounted) {
+    return (
+      <div className="p-6 max-w-4xl mx-auto">
+        <div className="flex justify-center items-center h-64">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="toast toast-top toast-end">
+          <div className="alert alert-success">
+            <span>Preferences saved successfully!</span>
+          </div>
+        </div>
+      )}
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold">App Preferences</h1>
           <p className="text-gray-600 mt-2">Customize your app experience and settings.</p>
@@ -26,7 +81,8 @@ const AppPreferences = () => {
         {/* Theme Dropdown */}
         <div className="dropdown dropdown-end">
           <div tabIndex={0} role="button" className="btn btn-outline">
-            Theme
+            <span className="hidden md:inline">Theme: {theme}</span>
+            <span className="md:hidden">Theme</span>
             <svg
               width="12px"
               height="12px"
@@ -37,60 +93,16 @@ const AppPreferences = () => {
             </svg>
           </div>
           <ul tabIndex={0} className="dropdown-content bg-base-300 rounded-box z-10 w-52 p-2 shadow-2xl">
-            <li>
-              <input
-                type="radio"
-                name="theme-dropdown"
-                className="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-                aria-label="Default"
-                value="light"
-              />
-            </li>
-            <li>
-              <input
-                type="radio"
-                name="theme-dropdown"
-                className="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-                aria-label="Dark"
-                value="dark"
-              />
-            </li>
-            <li>
-              <input
-                type="radio"
-                name="theme-dropdown"
-                className="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-                aria-label="Retro"
-                value="retro"
-              />
-            </li>
-            <li>
-              <input
-                type="radio"
-                name="theme-dropdown"
-                className="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-                aria-label="Cyberpunk"
-                value="cyberpunk"
-              />
-            </li>
-            <li>
-              <input
-                type="radio"
-                name="theme-dropdown"
-                className="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-                aria-label="Valentine"
-                value="valentine"
-              />
-            </li>
-            <li>
-              <input
-                type="radio"
-                name="theme-dropdown"
-                className="theme-controller btn btn-sm btn-block btn-ghost justify-start"
-                aria-label="Aqua"
-                value="aqua"
-              />
-            </li>
+            {themes.map((t) => (
+              <li key={t}>
+                <button
+                  className={`btn btn-sm btn-block btn-ghost justify-start ${theme === t ? 'btn-primary' : ''}`}
+                  onClick={() => changeTheme(t)}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
@@ -107,8 +119,8 @@ const AppPreferences = () => {
               </label>
               <select 
                 className="select select-bordered w-full"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                value={preferences.language}
+                onChange={(e) => handlePreferenceChange('language', e.target.value)}
               >
                 {languages.map((lang) => (
                   <option key={lang} value={lang}>{lang}</option>
@@ -122,8 +134,8 @@ const AppPreferences = () => {
               </label>
               <select 
                 className="select select-bordered w-full"
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
+                value={preferences.currency}
+                onChange={(e) => handlePreferenceChange('currency', e.target.value)}
               >
                 {currencies.map((curr) => (
                   <option key={curr} value={curr.split(' ')[0]}>{curr}</option>
@@ -137,8 +149,8 @@ const AppPreferences = () => {
               </label>
               <select 
                 className="select select-bordered w-full"
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
+                value={preferences.timezone}
+                onChange={(e) => handlePreferenceChange('timezone', e.target.value)}
               >
                 {timezones.map((tz) => (
                   <option key={tz} value={tz.split(' ')[2].replace('(', '').replace(')', '')}>{tz}</option>
@@ -158,8 +170,8 @@ const AppPreferences = () => {
                 <input 
                   type="checkbox" 
                   className="toggle toggle-primary mr-3" 
-                  checked={autoAccept}
-                  onChange={(e) => setAutoAccept(e.target.checked)}
+                  checked={preferences.autoAccept}
+                  onChange={(e) => handlePreferenceChange('autoAccept', e.target.checked)}
                 />
                 <span className="label-text">
                   <span className="font-medium">Auto-accept Connection Requests</span>
@@ -174,12 +186,12 @@ const AppPreferences = () => {
               <label className="label">
                 <span className="label-text font-semibold">Email Digest Frequency</span>
               </label>
-              <div className="btn-group w-full">
+              <div className="grid grid-cols-2 gap-2">
                 {frequencies.map((freq) => (
                   <button
                     key={freq}
-                    className={`btn btn-sm ${emailFrequency === freq.toLowerCase().replace(' ', '-') ? 'btn-primary' : 'btn-outline'}`}
-                    onClick={() => setEmailFrequency(freq.toLowerCase().replace(' ', '-'))}
+                    className={`btn btn-sm ${preferences.emailFrequency === freq.toLowerCase().replace(' ', '-') ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => handlePreferenceChange('emailFrequency', freq.toLowerCase().replace(' ', '-'))}
                   >
                     {freq}
                   </button>
@@ -190,9 +202,13 @@ const AppPreferences = () => {
         </div>
       </div>
       
-      <div className="mt-8 flex justify-end gap-4">
-        <button className="btn btn-outline">Cancel</button>
-        <button className="btn btn-primary">Save Preferences</button>
+      <div className="mt-8 flex flex-col sm:flex-row justify-end gap-4">
+        <button className="btn btn-outline" onClick={resetPreferences}>
+          Reset to Defaults
+        </button>
+        <button className="btn btn-primary" onClick={savePreferences}>
+          Save Preferences
+        </button>
       </div>
     </div>
   );
