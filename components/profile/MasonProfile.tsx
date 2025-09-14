@@ -198,10 +198,11 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
 
               <div>
                 <button
-                onClick={() => document.getElementById("profile-form").showModal()} 
+                onClick={() => (document.getElementById("profile-form") as HTMLDialogElement).showModal()} 
                 className='btn btn-accent'>Update profile</button>
                 <dialog className="modal" id="profile-form">
                 <div className="modal-box">
+                <h3 className='text-lg font-semibold mb-3'>Please fill the form below</h3>
                   {/* Two-column layout with divider */}
                   <div className="flex flex-row divide-x divide-gray-300 gap-6">
                     
@@ -312,10 +313,10 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
 
                       <label htmlFor="Description">Description:</label>
                       <textarea className='textarea' placeholder='Tell us about yourself...'>
-
                       </textarea>
 
-                      {/* You can keep adding more fields */}
+                      {/* Submit button */}
+                      <button type='submit' className='btn btn-primary' onClick={handleSubmit}>Submit</button>
                     </div>
                   </div>
                 </div>
