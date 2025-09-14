@@ -348,7 +348,6 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                 {/* Profile Header with Avatar */}
                 <div className="bg-blue-600 text-white p-6 relative">
                   <div className="flex items-center">
-                    {profileData.avatarUrl && (
                       <div className="mr-4">
                         <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white">
                           <img 
@@ -358,7 +357,6 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                           />
                         </div>
                       </div>
-                    )}
                     <div>
                       <h1 className="text-3xl font-bold">{user.fullName}</h1>
                       <div className="flex items-center mt-2 flex-wrap">
