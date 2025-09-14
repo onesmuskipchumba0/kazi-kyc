@@ -7,12 +7,14 @@ import PortfolioTab from './portfolioTab';
 import ReviewsTab from './ReviewsTab';
 import SkillsTab from './SkillsTab';
 import SettingsTab from './SettingsTab';
+import { useUser } from '@clerk/nextjs';
 
 interface MasonProfileProps {
   mason: any;
 }
 
 const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
+  const {isSignedIn, user, isLoaded} = useUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [profileData, setProfileData] = useState(mason);
 
@@ -55,6 +57,8 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
       </header>
 
       {/* Profile Section */}
+      {isSignedIn && isLoaded ? (
+
       <main className="container mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Profile Header with Avatar */}
@@ -64,15 +68,15 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                 <div className="mr-4">
                   <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white">
                     <img 
-                      src={profileData.avatarUrl} 
-                      alt={profileData.name}
+                      src={user.imageUrl} 
+                      alt={user.firstName || ""}
                       className="w-full h-full object-cover"
                     />
                   </div>
                 </div>
               )}
               <div>
-                <h1 className="text-3xl font-bold">{profileData.name}</h1>
+                <h1 className="text-3xl font-bold">{user.fullName}</h1>
                 <div className="flex items-center mt-2 flex-wrap">
                   <FaBriefcase className="mr-2" />
                   <span>{profileData.title}</span>
@@ -211,6 +215,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
           </div>
         </div>
       </main>
+      ): null}
     </div>
   );
 };
