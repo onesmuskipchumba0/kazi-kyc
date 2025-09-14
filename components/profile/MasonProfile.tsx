@@ -14,10 +14,31 @@ interface MasonProfileProps {
 }
 
 const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
+  const [inputValue, setInputValue] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+
   const {isSignedIn, user, isLoaded} = useUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [profileData, setProfileData] = useState(mason);
 
+  const handleAdd = () => {
+    if (inputValue && !languages.includes(inputValue)) {
+      setLanguages([...languages, inputValue]);
+      setInputValue("");
+    }
+  };
+
+  const handleCheckboxChange = (lang: string) => {
+    setSelected((prev) =>
+      prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Selected languages:", selected);
+  };
   const renderTabContent = () => {
     switch (activeTab) {
       case 'overview':
@@ -174,6 +195,137 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                   </div>
                 </>
               )}
+
+              <div>
+                <button
+                onClick={() => document.getElementById("profile-form").showModal()} 
+                className='btn btn-accent'>Update profile</button>
+                <dialog className="modal" id="profile-form">
+                <div className="modal-box">
+                  {/* Two-column layout with divider */}
+                  <div className="flex flex-row divide-x divide-gray-300 gap-6">
+                    
+                    {/* Left Side */}
+                    <div className="flex flex-col space-y-4 pr-6 w-1/2">
+                      <label htmlFor="phone">Phone number:</label>
+                      <input
+                        type="tel"
+                        className="input"
+                        id="phone"
+                        placeholder="Enter your phone number"
+                      />
+
+                      <label htmlFor="location">Location:</label>
+                      <input
+                        type="text"
+                        className="input"
+                        id="location"
+                        placeholder="Enter your current location"
+                      />
+
+                      <label>Hourly Rate:</label>
+                      <input
+                        type="number"
+                        className="input"
+                        placeholder="Enter your hourly rate"
+                      />
+
+                      <label>Experience:</label>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="Please describe your experience"
+                      />
+
+                      <label>Availability:</label>
+                      <input
+                        type="text"
+                        className="input"
+                        placeholder="Please state if you are available to work"
+                      />
+
+                      <label>Languages:</label>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            placeholder="Type a language"
+                            className="input px-2 py-1 rounded flex-grow"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAdd}
+                            className="bg-blue-500 text-white px-3 py-1 rounded"
+                          >
+                            Add
+                          </button>
+                        </div>
+
+                        <div className="mb-4">
+                          {languages.length > 0 ? (
+                            languages.map((lang, index) => (
+                              <label key={index} className="block mb-1">
+                                <input
+                                  type="checkbox"
+                                  checked={selected.includes(lang)}
+                                  onChange={() => handleCheckboxChange(lang)}
+                                  className="mr-2"
+                                />
+                                {lang}
+                              </label>
+                            ))
+                          ) : (
+                            <p className="text-gray-500">No languages added yet.</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Side */}
+                    <div className="flex flex-col space-y-4 pl-6 w-1/2">
+                      <label htmlFor="contact">Contact:</label>
+                      <input
+                        type="tel"
+                        className="input"
+                        id="conatct"
+                        placeholder="Enter an emergency contact"
+                      />
+
+                      <label htmlFor="portfolio">Core Skills:</label>
+                      <input
+                        type="url"
+                        className="input"
+                        id="portfolio"
+                        placeholder="Enter your portfolio link"
+                      />
+
+                      <label htmlFor="linkedin">Profile Type:</label>
+                      <select name="" id="" className='select'>
+                        <option value="worker">Worker</option>
+                        <option value="employer">Employer</option>
+                      </select>
+
+                      <label htmlFor="profile-pic">Upload profile picture</label>
+                      <input type="file" className='file-input' />
+
+                      <label htmlFor="Description">Description:</label>
+                      <textarea className='textarea' placeholder='Tell us about yourself...'>
+
+                      </textarea>
+
+                      {/* You can keep adding more fields */}
+                    </div>
+                  </div>
+                </div>
+
+                <form method="dialog" className="modal-backdrop">
+                  <button>close</button>
+                </form>
+              </dialog>
+
+              </div>
             </div>
 
             {/* Navigation Tabs */}
