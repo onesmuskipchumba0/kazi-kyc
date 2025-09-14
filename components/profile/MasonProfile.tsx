@@ -18,6 +18,26 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
   const [languages, setLanguages] = useState<string[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
 
+  // Add these new state variables for coreSkills
+  const [coreSkillsInputValue, setCoreSkillsInputValue] = useState("");
+  const [selectedCoreSkills, setSelectedCoreSkills] = useState<string[]>([]);
+
+  const [ phoneNumber, setPhoneNumber ] = useState<string>();
+  const [location, setLocation] = useState<string>('');
+  const [hourlyRate, setHourlyRate] = useState<string>('');
+  const [experience, setExperience] = useState<string>('');
+  const [availability, setAvailability] = useState<string>('');
+  const [coreSkills, setCoreSkills] = useState<string[]>([]);
+  const [profileType, setProfileType] = useState<string>('worker');
+  const [description, setDescription] = useState<string>('');
+  
+  // Add state for profile picture upload
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+
+  // Add toast state
+  const [toastMessage, setToastMessage] = useState<string>('');
+  const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success');
+
   const {isSignedIn, user, isLoaded} = useUser();
   const [activeTab, setActiveTab] = useState('overview');
   const [profileData, setProfileData] = useState(mason);
@@ -29,15 +49,152 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
     }
   };
 
+  // Add these new functions for coreSkills
+  const handleAddCoreSkill = () => {
+    if (coreSkillsInputValue && !coreSkills.includes(coreSkillsInputValue)) {
+      setCoreSkills([...coreSkills, coreSkillsInputValue]);
+      setCoreSkillsInputValue("");
+    }
+  };
+
+  const handleCoreSkillCheckboxChange = (skill: string) => {
+    setSelectedCoreSkills((prev) =>
+      prev.includes(skill) ? prev.filter((s) => s !== skill) : [...prev, skill]
+    );
+  };
+
   const handleCheckboxChange = (lang: string) => {
     setSelected((prev) =>
       prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Add function to handle profile picture upload
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePicture(file);
+    }
+  };
+
+  // Add function to show toast
+  const showToast = (message: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    setToastMessage(message);
+    setToastType(type);
+    
+    // Auto-hide toast after 3 seconds
+    setTimeout(() => {
+      setToastMessage('');
+    }, 3000);
+  };
+
+  // Add validation function
+  const validateForm = () => {
+    const errors: string[] = [];
+
+    // Required field validations
+    if (!phoneNumber || phoneNumber.trim() === '') {
+      errors.push('Phone number is required');
+    }
+
+    if (!location || location.trim() === '') {
+      errors.push('Location is required');
+    }
+
+    if (!hourlyRate || hourlyRate.trim() === '') {
+      errors.push('Hourly rate is required');
+    }
+
+    if (!experience || experience.trim() === '') {
+      errors.push('Experience description is required');
+    }
+
+    if (!availability || availability.trim() === '') {
+      errors.push('Availability status is required');
+    }
+
+    if (!description || description.trim() === '') {
+      errors.push('Description is required');
+    }
+
+    // Validate phone number format (basic validation)
+    if (phoneNumber && !/^[\+]?[1-9][\d]{0,15}$/.test(phoneNumber.replace(/\s/g, ''))) {
+      errors.push('Please enter a valid phone number');
+    }
+
+    // Validate hourly rate is a positive number
+    if (hourlyRate && (isNaN(Number(hourlyRate)) || Number(hourlyRate) <= 0)) {
+      errors.push('Hourly rate must be a positive number');
+    }
+
+    // Validate that at least one language is selected
+    if (selected.length === 0) {
+      errors.push('Please select at least one language');
+    }
+
+    // Validate that at least one core skill is selected
+    if (selectedCoreSkills.length === 0) {
+      errors.push('Please select at least one core skill');
+    }
+
+    return errors;
+  };
+
+  // Update handleSubmit with validation and error handling
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Selected languages:", selected);
+    
+    // Validate form
+    const validationErrors = validateForm();
+    
+    if (validationErrors.length > 0) {
+      // Show first error as toast
+      showToast(validationErrors[0], 'error');
+      return;
+    }
+    
+    const formData = {
+      phoneNumber,
+      selectedLanguages: selected,
+      languages,
+      location,
+      hourlyRate,
+      experience,
+      availability,
+      coreSkills,
+      selectedCoreSkills,
+      profileType,
+      description,
+      profilePicture: profilePicture?.name || null,
+    };
+
+    console.log('Form data:', formData);
+
+    try {
+      // Show loading toast
+      showToast('Updating profile...', 'warning');
+
+      const response = await fetch('/api/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        showToast('Profile updated successfully!', 'success');
+        // Close the modal
+        (document.getElementById("profile-form") as HTMLDialogElement).close();
+        // You might want to refresh the profile data here
+      } else {
+        const errorData = await response.json();
+        showToast(errorData.message || 'Failed to update profile', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      showToast('Network error. Please try again.', 'error');
+    }
   };
   const renderTabContent = () => {
     switch (activeTab) {
@@ -70,6 +227,17 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {/* Toast Container */}
+      {toastMessage && (
+        <div className="toast toast-top toast-end">
+          <div className={`alert ${toastType === 'success' ? 'alert-success' : toastType === 'error' ? 'alert-error' : 'alert-warning'}`}>
+            <div>
+              <span>{toastMessage}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white shadow-md">
         <div className="container mx-auto px-4 py-4">
@@ -213,6 +381,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                         type="tel"
                         className="input"
                         id="phone"
+                        onChange={e => setPhoneNumber(e.target.value)}
                         placeholder="Enter your phone number"
                       />
 
@@ -221,6 +390,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                         type="text"
                         className="input"
                         id="location"
+                        onChange={e => setLocation(e.target.value)}
                         placeholder="Enter your current location"
                       />
 
@@ -228,6 +398,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                       <input
                         type="number"
                         className="input"
+                        onChange={e => setHourlyRate(e.target.value)}
                         placeholder="Enter your hourly rate"
                       />
 
@@ -236,12 +407,14 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                         type="text"
                         className="input"
                         placeholder="Please describe your experience"
+                        onChange={e => setExperience(e.target.value)}
                       />
 
                       <label>Availability:</label>
                       <input
                         type="text"
                         className="input"
+                        onChange={e => setAvailability(e.target.value)}
                         placeholder="Please state if you are available to work"
                       />
 
@@ -286,34 +459,74 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
 
                     {/* Right Side */}
                     <div className="flex flex-col space-y-4 pl-6 w-1/2">
-                      <label htmlFor="contact">Contact:</label>
-                      <input
-                        type="tel"
-                        className="input"
-                        id="conatct"
-                        placeholder="Enter an emergency contact"
-                      />
 
                       <label htmlFor="portfolio">Core Skills:</label>
-                      <input
-                        type="url"
-                        className="input"
-                        id="portfolio"
-                        placeholder="Enter your portfolio link"
-                      />
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={coreSkillsInputValue}
+                            onChange={(e) => setCoreSkillsInputValue(e.target.value)}
+                            placeholder="Type a skill"
+                            className="input px-2 py-1 rounded flex-grow"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleAddCoreSkill}
+                            className="bg-blue-500 text-white px-3 py-1 rounded"
+                          >
+                            Add
+                          </button>
+                        </div>
 
-                      <label htmlFor="linkedin">Profile Type:</label>
-                      <select name="" id="" className='select'>
+                        <div className="mb-4">
+                          {coreSkills.length > 0 ? (
+                            coreSkills.map((skill, index) => (
+                              <label key={index} className="block mb-1">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedCoreSkills.includes(skill)}
+                                  onChange={() => handleCoreSkillCheckboxChange(skill)}
+                                  className="mr-2"
+                                />
+                                {skill}
+                              </label>
+                            ))
+                          ) : (
+                            <p className="text-gray-500">No skills added yet.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <label htmlFor="profile-type">Profile Type:</label>
+                      <select 
+                        name="profile-type" 
+                        id="profile-type" 
+                        className='select'
+                        value={profileType}
+                        onChange={(e) => setProfileType(e.target.value)}
+                      >
                         <option value="worker">Worker</option>
                         <option value="employer">Employer</option>
                       </select>
 
                       <label htmlFor="profile-pic">Upload profile picture</label>
-                      <input type="file" className='file-input' />
+                      <input 
+                        type="file" 
+                        className='file-input'
+                        id="profile-pic"
+                        accept="image/*"
+                        onChange={handleProfilePictureChange}
+                      />
 
-                      <label htmlFor="Description">Description:</label>
-                      <textarea className='textarea' placeholder='Tell us about yourself...'>
-                      </textarea>
+                      <label htmlFor="description">Description:</label>
+                      <textarea 
+                        className='textarea' 
+                        placeholder='Tell us about yourself...'
+                        id="description"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                      />
 
                       {/* Submit button */}
                       <button type='submit' className='btn btn-primary' onClick={handleSubmit}>Submit</button>
