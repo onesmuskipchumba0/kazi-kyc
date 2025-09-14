@@ -2,7 +2,7 @@
 import { PlusCircle, TrendingUp } from "lucide-react"
 import WorkPost  from "@/components/WorkPost"
 import PeopleAround from "@/components/PeopleAround"
-import { recentPosts } from "@/app/api/homePage"
+import { recentPosts } from "@/app/api/home/homePage"
 import { useUser } from "@clerk/nextjs"
 import { useUsers, useRecentPosts } from "@/lib/homepage/homeStore";
 
