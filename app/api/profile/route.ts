@@ -10,12 +10,16 @@ export async function GET(){
         }
         const email = user.emailAddresses[0].emailAddress;
 
-        //Query supabase for the user with that email
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
+        }
+
+        // Query supabase for the user with that email
         const { data, error } = await supabaseAdmin
-        .from("user")
-        .select("*")
-        .eq("email", email)
-        .single()
+            .from("user")
+            .select("*")
+            .eq("email", email)
+            .single();
 
         if( error ){
             return NextResponse.json({ error: error.message}, { status: 500})
@@ -57,15 +61,19 @@ export async function POST( req: Request){
             companyName,
             employeesCount,
             projectsCompleted,
-            avatarURL,
+            avatarURL, // This should be the Supabase storage URL
         } = body;
 
         // Check if user already exists
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
+        }
         const { data: existingUser, error: checkError } = await supabaseAdmin
             .from("user")
             .select("id")
             .eq("email", email_)
             .single();
+
 
         if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
             return NextResponse.json({ error: checkError.message }, {status: 500});

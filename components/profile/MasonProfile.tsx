@@ -8,6 +8,8 @@ import ReviewsTab from './ReviewsTab';
 import SkillsTab from './SkillsTab';
 import SettingsTab from './SettingsTab';
 import { useUser } from '@clerk/nextjs';
+import { supabase } from '@/lib/supabaseClient';
+import { supabaseAdmin } from '@/lib/supabaseClient';
 
 interface MasonProfileProps {
   mason: any;
@@ -33,6 +35,8 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
   
   // Add state for profile picture upload
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string>('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // Add toast state
   const [toastMessage, setToastMessage] = useState<string>('');
@@ -64,41 +68,48 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
           setDescription(userData.description || '');
           setProfileType(userData.profileType || 'worker');
           
+          // Set profile picture URL if exists
+          if (userData.avatarUrl) {
+            setProfilePictureUrl(userData.avatarUrl);
+          }
+          
           // Handle languages
           if (userData.languages && Array.isArray(userData.languages)) {
             setLanguages(userData.languages);
-            setSelected(userData.languages); // Pre-select all existing languages
+            setSelected(userData.languages);
           }
           
           // Handle core skills
           if (userData.coreSkills && Array.isArray(userData.coreSkills)) {
             setCoreSkills(userData.coreSkills);
-            setSelectedCoreSkills(userData.coreSkills); // Pre-select all existing skills
+            setSelectedCoreSkills(userData.coreSkills);
           }
+          
+          // Debug: Log the avatar URL
+          console.log('Loaded avatar URL:', userData.avatarUrl);
+          console.log('Clerk image URL:', user?.imageUrl);
           
           // Transform data to match OverviewTab expectations
           const transformedData = {
             ...userData,
-            // Create contact object that OverviewTab expects
             contact: {
               phone: userData.phoneNumber || '',
               email: userData.email || '',
               location: userData.location || ''
             },
-            // Ensure arrays exist
             languages: userData.languages || [],
             coreSkills: userData.coreSkills || [],
-            // Add default values for missing fields
             responseRate: userData.responseRate || 100,
             hourlyRate: userData.hourlyRate || 0,
             experience: userData.experience || '',
             availability: userData.availability || '',
             companyName: userData.companyName || '',
             employeesCount: userData.employeesCount || 0,
-            profileType: userData.profileType || 'worker'
+            profileType: userData.profileType || 'worker',
+            avatarUrl: userData.avatarUrl // Fallback to Clerk image
           };
           
-          // Update profile data state with transformed data
+          console.log('Transformed data avatarUrl:', transformedData.avatarUrl);
           setProfileData(transformedData);
         }
       } else {
@@ -146,11 +157,69 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
     );
   };
 
-  // Add function to handle profile picture upload
-  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Enhanced upload function with better debugging
+  const uploadProfilePicture = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      
+      console.log('Starting upload for file:', file.name, file.size, file.type);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log('Sending request to /api/upload-profile-image');
+      const response = await fetch('/api/upload-profile-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Upload failed:', error);
+        showToast(`Upload failed: ${error.error}`, 'error');
+        return null;
+      }
+
+      const result = await response.json();
+      console.log('Upload successful, URL:', result.url);
+      
+      showToast('Profile picture uploaded successfully!', 'success');
+      return result.url;
+    } catch (error) {
+      console.error('Upload error:', error);
+      showToast('Failed to upload profile picture', 'error');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Update handleProfilePictureChange to handle upload
+  const handleProfilePictureChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        showToast('Please select a valid image file', 'error');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('File size must be less than 5MB', 'error');
+        return;
+      }
+
       setProfilePicture(file);
+      
+      // Upload immediately when file is selected
+      const uploadedUrl = await uploadProfilePicture(file);
+      if (uploadedUrl) {
+        setProfilePictureUrl(uploadedUrl);
+      }
     }
   };
 
@@ -225,7 +294,6 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
     const validationErrors = validateForm();
     
     if (validationErrors.length > 0) {
-      // Show first error as toast
       showToast(validationErrors[0], 'error');
       return;
     }
@@ -235,19 +303,18 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
       phoneNumber,
       location,
       description,
-      hourlyRate: Number(hourlyRate), // Convert to number
+      hourlyRate: Number(hourlyRate),
       experience,
       availability,
-      languages: selected, // Use selected languages instead of all languages
-      coreSkills: selectedCoreSkills, // Use selected core skills
+      languages: selected,
+      coreSkills: selectedCoreSkills,
       profileType,
-      avatarURL: profilePicture?.name || null,
-      // Add default values for fields your API expects but form doesn't have
+      avatarURL: profilePictureUrl || profileData.avatarUrl, // Use uploaded URL or existing
       jobsCompleted: 0,
       responseTime: 24,
       completionRate: 100,
       responseRate: 100,
-      contact: phoneNumber, // Use phone number as contact
+      contact: phoneNumber,
       companyName: profileType === 'employer' ? '' : null,
       employeesCount: profileType === 'employer' ? 0 : null,
       projectsCompleted: profileType === 'employer' ? 0 : null,
@@ -256,7 +323,6 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
     console.log('Form data:', formData);
 
     try {
-      // Show loading toast
       showToast('Updating profile...', 'warning');
 
       const response = await fetch('/api/profile', {
@@ -269,9 +335,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
 
       if (response.ok) {
         showToast('Profile updated successfully!', 'success');
-        // Close the modal
         (document.getElementById("profile-form") as HTMLDialogElement).close();
-        // Reload user data to reflect changes
         await loadUserData();
       } else {
         const errorData = await response.json();
@@ -348,14 +412,20 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                 {/* Profile Header with Avatar */}
                 <div className="bg-blue-600 text-white p-6 relative">
                   <div className="flex items-center">
-                      <div className="mr-4">
+                      <div className="mr-4 relative">
                         <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white">
                           <img 
-                            src={user.imageUrl} 
+                            src={profileData.avatarUrl || user.imageUrl} 
                             alt={user.firstName || ""}
                             className="w-full h-full object-cover"
                           />
                         </div>
+                        {/* Show indicator if custom profile picture is uploaded */}
+                        {profileData.avatarUrl && profileData.avatarUrl !== user.imageUrl && (
+                          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">✓</span>
+                          </div>
+                        )}
                       </div>
                     <div>
                       <h1 className="text-3xl font-bold">{user.fullName}</h1>
@@ -609,13 +679,32 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                             </select>
 
                             <label htmlFor="profile-pic">Upload profile picture</label>
-                            <input 
-                              type="file" 
-                              className='file-input'
-                              id="profile-pic"
-                              accept="image/*"
-                              onChange={handleProfilePictureChange}
-                            />
+                            <div className="space-y-2">
+                              <input 
+                                type="file" 
+                                className='file-input'
+                                id="profile-pic"
+                                accept="image/*"
+                                onChange={handleProfilePictureChange}
+                                disabled={isUploading}
+                              />
+                              {isUploading && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <div className="loading loading-spinner loading-sm"></div>
+                                  Uploading...
+                                </div>
+                              )}
+                              {profilePictureUrl && (
+                                <div className="mt-2">
+                                  <p className="text-sm text-green-600 mb-2">✓ Profile picture uploaded</p>
+                                  <img 
+                                    src={profilePictureUrl} 
+                                    alt="Profile preview" 
+                                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                                  />
+                                </div>
+                              )}
+                            </div>
 
                             <label htmlFor="description">Description:</label>
                             <textarea 
