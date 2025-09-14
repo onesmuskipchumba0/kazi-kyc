@@ -1,4 +1,4 @@
-import { peopleData } from "@/app/api/homePage";
+import { peopleData } from "@/app/api/home/homePage";
 import { NextResponse } from "next/server";
 
 
