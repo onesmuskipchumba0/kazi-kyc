@@ -153,19 +153,27 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
       return;
     }
     
+    // Format data to match API expectations
     const formData = {
       phoneNumber,
-      selectedLanguages: selected,
-      languages,
       location,
-      hourlyRate,
+      description,
+      hourlyRate: Number(hourlyRate), // Convert to number
       experience,
       availability,
-      coreSkills,
-      selectedCoreSkills,
+      languages: selected, // Use selected languages instead of all languages
+      coreSkills: selectedCoreSkills, // Use selected core skills
       profileType,
-      description,
-      profilePicture: profilePicture?.name || null,
+      avatarURL: profilePicture?.name || null,
+      // Add default values for fields your API expects but form doesn't have
+      jobsCompleted: 0,
+      responseTime: 24,
+      completionRate: 100,
+      responseRate: 100,
+      contact: phoneNumber, // Use phone number as contact
+      companyName: profileType === 'employer' ? '' : null,
+      employeesCount: profileType === 'employer' ? 0 : null,
+      projectsCompleted: profileType === 'employer' ? 0 : null,
     };
 
     console.log('Form data:', formData);
@@ -189,7 +197,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
         // You might want to refresh the profile data here
       } else {
         const errorData = await response.json();
-        showToast(errorData.message || 'Failed to update profile', 'error');
+        showToast(errorData.error || 'Failed to update profile', 'error');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -369,7 +377,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                 onClick={() => (document.getElementById("profile-form") as HTMLDialogElement).showModal()} 
                 className='btn btn-accent'>Update profile</button>
                 <dialog className="modal" id="profile-form">
-                <div className="modal-box">
+                <div className="modal-box w-3/4">
                 <h3 className='text-lg font-semibold mb-3'>Please fill the form below</h3>
                   {/* Two-column layout with divider */}
                   <div className="flex flex-row divide-x divide-gray-300 gap-6">
