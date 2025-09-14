@@ -382,7 +382,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                         className="input"
                         id="phone"
                         onChange={e => setPhoneNumber(e.target.value)}
-                        placeholder="Enter your phone number"
+                        placeholder="+254712345768"
                       />
 
                       <label htmlFor="location">Location:</label>
