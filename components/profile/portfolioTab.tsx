@@ -2,16 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Upload, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import UserDebugInfo from '../UserDebugInfo';
 
 interface PortfolioItem {
   id: string;
   title: string;
   description: string;
-  image_url: string;
+  imageURL: string;
   location: string;
-  created_at: string;
-  user_id: string;
+  date: string;
+  userId: string;
 }
 
 interface FormData {
@@ -210,10 +209,10 @@ const PortfolioTab: React.FC = () => {
     setFormData({
       title: item.title,
       description: item.description,
-      imageUrl: item.image_url,
+      imageUrl: item.imageURL,
       location: item.location
     });
-    setImagePreview(item.image_url);
+    setImagePreview(item.imageURL);
     setSelectedFile(null); // Clear selected file for editing
     setIsEditing(true);
     setEditingId(item.id);
@@ -286,11 +285,6 @@ const PortfolioTab: React.FC = () => {
         </button>
       </div>
 
-      {/* Debug Info - Remove this after fixing the issue */}
-      <div className="mb-6">
-        <UserDebugInfo />
-      </div>
-
       {portfolioItems.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-gray-500 mb-4">
@@ -305,7 +299,7 @@ const PortfolioTab: React.FC = () => {
             <div key={item.id} className="card bg-base-100 shadow-md overflow-hidden">
               <figure>
                 <img 
-                  src={item.image_url} 
+                  src={item.imageURL} 
                   alt={item.title}
                   className="w-full h-48 object-cover"
                 />
@@ -315,7 +309,7 @@ const PortfolioTab: React.FC = () => {
                 <p>{item.description}</p>
                 <div className="flex justify-between text-sm text-gray-500 mt-2">
                   <span>{item.location}</span>
-                  <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span>{new Date(item.date).toLocaleDateString()}</span>
                 </div>
                 <div className="card-actions justify-end mt-4">
                   <button

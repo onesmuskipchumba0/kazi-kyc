@@ -16,15 +16,12 @@ export async function GET(request: NextRequest) {
      }
 
      const userEmail = user.emailAddresses[0]?.emailAddress;
-     console.log('Looking up user with email:', userEmail);
      
      const { data: dbUser, error: userError } = await supabaseAdmin
        .from('user')
        .select('public_id')
        .eq('email', userEmail)
        .single();
-
-     console.log('User lookup result:', { dbUser, userError });
 
      if (userError || !dbUser) {
        console.error('User lookup failed:', userError);
@@ -38,8 +35,8 @@ export async function GET(request: NextRequest) {
     const { data: portfolioItems, error } = await supabaseAdmin
       .from('portfolio')
       .select('*')
-      .eq('user_id', dbUser.public_id)
-      .order('created_at', { ascending: false });
+      .eq('userId', dbUser.public_id)
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('Error fetching portfolio:', error);
@@ -88,15 +85,12 @@ export async function POST(request: NextRequest) {
      }
 
      const userEmail = user.emailAddresses[0]?.emailAddress;
-     console.log('POST: Looking up user with email:', userEmail);
      
      const { data: dbUser, error: userError } = await supabaseAdmin
        .from('user')
        .select('public_id')
        .eq('email', userEmail)
        .single();
-
-     console.log('POST: User lookup result:', { dbUser, userError });
 
      if (userError || !dbUser) {
        console.error('POST: User lookup failed:', userError);
@@ -170,15 +164,12 @@ export async function PUT(request: NextRequest) {
      }
 
      const userEmail = user.emailAddresses[0]?.emailAddress;
-     console.log('PUT: Looking up user with email:', userEmail);
      
      const { data: dbUser, error: userError } = await supabaseAdmin
        .from('user')
        .select('public_id')
        .eq('email', userEmail)
        .single();
-
-     console.log('PUT: User lookup result:', { dbUser, userError });
 
      if (userError || !dbUser) {
        console.error('PUT: User lookup failed:', userError);
@@ -199,7 +190,7 @@ export async function PUT(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
-      .eq('user_id', dbUser.public_id) // Ensure user owns the item
+      .eq('userId', dbUser.public_id) // Ensure user owns the item
       .select()
       .single();
 
@@ -240,15 +231,12 @@ export async function DELETE(request: NextRequest) {
      }
 
      const userEmail = user.emailAddresses[0]?.emailAddress;
-     console.log('DELETE: Looking up user with email:', userEmail);
      
      const { data: dbUser, error: userError } = await supabaseAdmin
        .from('user')
        .select('public_id')
        .eq('email', userEmail)
        .single();
-
-     console.log('DELETE: User lookup result:', { dbUser, userError });
 
      if (userError || !dbUser) {
        console.error('DELETE: User lookup failed:', userError);
@@ -263,7 +251,7 @@ export async function DELETE(request: NextRequest) {
       .from('portfolio')
       .delete()
       .eq('id', id)
-      .eq('user_id', dbUser.public_id); // Ensure user owns the item
+      .eq('userId', dbUser.public_id); // Ensure user owns the item
 
     if (error) {
       console.error('Error deleting portfolio item:', error);
