@@ -6,6 +6,7 @@ import { ClerkProvider, SignedIn, SignedOut } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import SignInComponent from "@/components/SignInComponent";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +44,29 @@ export default function RootLayout({
             <SignedOut>
               <SignInComponent/>
             </SignedOut>
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: 'var(--fallback-b1,oklch(var(--b1)))',
+                  color: 'var(--fallback-bc,oklch(var(--bc)))',
+                  border: '1px solid var(--fallback-b3,oklch(var(--b3)))',
+                },
+                success: {
+                  iconTheme: {
+                    primary: 'var(--fallback-su,oklch(var(--su)))',
+                    secondary: 'var(--fallback-suc,oklch(var(--suc)))',
+                  },
+                },
+                error: {
+                  iconTheme: {
+                    primary: 'var(--fallback-er,oklch(var(--er)))',
+                    secondary: 'var(--fallback-erc,oklch(var(--erc)))',
+                  },
+                },
+              }}
+            />
           </ThemeProvider>
         </body>
       </html>
