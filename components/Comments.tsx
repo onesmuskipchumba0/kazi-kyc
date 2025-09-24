@@ -16,28 +16,20 @@ interface Comment {
   };
 }
 
-interface PostStats {
-  comments: number;
-  likes: number;
-}
-
 interface CommentsProps {
-  postId: string;
+  postId: number;
   isOpen: boolean;
+  setCommentsCount?: React.Dispatch<React.SetStateAction<number>>; // ✅ parent setter
 }
 
-export default function Comments({ postId, isOpen }: CommentsProps) {
+export default function Comments({ postId, isOpen, setCommentsCount }: CommentsProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [postStats, setPostStats] = useState<PostStats | null>(null);
   const { supabaseUser: currentUser } = useSupabaseUser();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && postId) {
-      fetchComments();
-      fetchLikes();
-    }
+    if (isOpen && postId) fetchComments();
   }, [postId, isOpen]);
 
   useEffect(() => {
@@ -50,18 +42,7 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
   const fetchComments = async () => {
     const { data: commentsData, error, count } = await supabase
       .from('comments')
-      .select(
-        `
-        *,
-        user:user(
-          public_id,
-          firstName,
-          lastName,
-          avatarUrl
-        )
-      `,
-        { count: 'exact' }
-      )
+      .select(`*, user:user(public_id, firstName, lastName, avatarUrl)`, { count: 'exact' })
       .eq('post_id', postId)
       .order('created_at', { ascending: false });
 
@@ -71,37 +52,15 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
     }
 
     setComments(commentsData || []);
-    setPostStats((prev) => ({
-      ...(prev || { likes: 0 }),
-      comments: count || 0,
-    }));
-  };
-
-  const fetchLikes = async () => {
-    const { data, error } = await supabase
-      .from('posts')
-      .select('likes')
-      .eq('id', postId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching likes:', error);
-      return;
-    }
-
-    setPostStats((prev) => ({
-      ...(prev || { comments: 0 }),
-      likes: data.likes,
-    }));
+    if (setCommentsCount) setCommentsCount(count || 0);
   };
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!currentUser || !newComment.trim() || !currentUser?.public_id) return;
+    if (!currentUser || !newComment.trim() || !currentUser.public_id) return;
 
     // Check if user already commented
-    const { data: existingComment, error: checkError } = await supabase
+    const { data: existingComment } = await supabase
       .from('comments')
       .select('id')
       .eq('post_id', postId)
@@ -126,13 +85,13 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
 
     setNewComment('');
     await fetchComments();
+    setToastMessage('Comment added successfully');
   };
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Toast */}
       {toastMessage && (
         <div className="fixed top-4 right-4 z-50">
           <div className="alert alert-warning shadow-lg">
@@ -142,16 +101,6 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
       )}
 
       <div className="mt-4 border-t pt-4">
-        {/* Post stats */}
-        {postStats && (
-          <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-            <span>{postStats.comments} Comments</span>
-            <span className="flex items-center gap-1">
-              <ThumbsUp className="w-4 h-4" /> {postStats.likes} Likes
-            </span>
-          </div>
-        )}
-
         {/* Add comment form */}
         {currentUser ? (
           <form onSubmit={handleSubmitComment} className="flex gap-2 mb-4">
