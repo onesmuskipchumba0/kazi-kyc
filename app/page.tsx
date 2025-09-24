@@ -5,8 +5,9 @@ import PeopleAround from "@/components/PeopleAround"
 import { recentPosts } from "@/app/api/home/homePage"
 import { useUser } from "@clerk/nextjs"
 import { useUsers, useRecentPosts } from "@/lib/homepage/homeStore";
+import PostComponent from "@/components/PostComponent";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 export default function HomePage() {
   
   const {user, isLoaded} = useUser();
@@ -30,10 +31,18 @@ export default function HomePage() {
             <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
             <p className="text-base-content/60">Here's what's happening in your network</p>
           </div>
-          <button className="btn btn-primary btn-sm md:btn-md">
-            <PlusCircle className="w-4 h-4" />
-            Share Work
-          </button>
+        
+          <div className="p-6">
+            <label
+              htmlFor="my_post_modal"
+              className="btn btn-primary btn-sm md:btn-md flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Share Work
+            </label>
+
+            <PostComponent userId="1234-uuid" modalId="my_post_modal" />
+    </div>
         </div>
 
         {/* Main Content Grid */}

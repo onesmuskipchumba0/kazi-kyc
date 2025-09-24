@@ -2,8 +2,7 @@
 
 import { useState, ChangeEvent } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { Plus, Upload } from "lucide-react";
-import { FaTimes } from "react-icons/fa";
+import { Upload } from "lucide-react";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -12,10 +11,10 @@ const supabase = createClient(
 
 type PostComponentProps = {
   userId: string;
+  modalId: string; // 👈 DaisyUI modal id
 };
 
-export default function PostComponent({ userId }: PostComponentProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function PostComponent({ userId, modalId }: PostComponentProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [images, setImages] = useState<File[]>([]);
@@ -27,7 +26,9 @@ export default function PostComponent({ userId }: PostComponentProps) {
       alert("Maximum 2 images allowed");
       return;
     }
-    setImages((prev) => [...prev, ...Array.from(e.target.files as FileList)]);
+    if (e.target.files) {
+      setImages((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
   };
 
   const handlePost = async () => {
@@ -40,6 +41,7 @@ export default function PostComponent({ userId }: PostComponentProps) {
     try {
       const uploadedUrls: string[] = [];
 
+      // Upload images
       for (const file of images) {
         const filePath = `${Date.now()}-${file.name}`;
         const { error: uploadError } = await supabase.storage
@@ -55,6 +57,7 @@ export default function PostComponent({ userId }: PostComponentProps) {
         uploadedUrls.push(publicUrlData.publicUrl);
       }
 
+      // Insert post
       const { error: insertError } = await supabase.from("posts").insert([
         {
           title,
@@ -70,10 +73,13 @@ export default function PostComponent({ userId }: PostComponentProps) {
 
       if (insertError) throw insertError;
 
+      // Reset form
       setTitle("");
       setDescription("");
       setImages([]);
-      setIsOpen(false);
+
+      // Close modal via DaisyUI checkbox
+      (document.getElementById(modalId) as HTMLInputElement).checked = false;
     } catch (err: any) {
       console.error("Error posting:", err.message);
     } finally {
@@ -82,62 +88,64 @@ export default function PostComponent({ userId }: PostComponentProps) {
   };
 
   return (
-    <div className="p-4">
-      <button className="btn btn-primary flex items-center gap-2" onClick={() => setIsOpen(true)}>
-        <Plus size={18} /> Create Post
-      </button>
+    <>
+      {/* DaisyUI modal toggle */}
+      <input type="checkbox" id={modalId} className="modal-toggle" />
+      <div className="modal" role="dialog">
+        <div className="modal-box">
+          <h2 className="text-xl font-semibold mb-4">New Post</h2>
 
-      {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">New Post</h2>
-              <button onClick={() => setIsOpen(false)}>
-                <FaTimes />
-              </button>
-            </div>
+          <input
+            type="text"
+            placeholder="Title"
+            className="input input-bordered w-full mb-3"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
 
+          <textarea
+            placeholder="Description"
+            className="textarea textarea-bordered w-full mb-3"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+
+          <label className="btn btn-outline w-full mb-3 flex items-center gap-2">
+            <Upload size={18} /> Upload Images (Max 2)
             <input
-              type="text"
-              placeholder="Title"
-              className="input input-bordered w-full mb-3"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={handleImageChange}
             />
+          </label>
 
-            <textarea
-              placeholder="Description"
-              className="textarea textarea-bordered w-full mb-3"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
+          <div className="flex gap-2 flex-wrap mb-3">
+            {images.map((img, idx) => (
+              <img
+                key={idx}
+                src={URL.createObjectURL(img)}
+                alt="preview"
+                className="w-20 h-20 object-cover rounded"
+              />
+            ))}
+          </div>
 
-            <label className="btn btn-outline w-full mb-3 flex items-center gap-2">
-              <Upload size={18} /> Upload Images (Max 2)
-              <input type="file" accept="image/*" multiple hidden onChange={handleImageChange} />
-            </label>
-
-            <div className="flex gap-2 flex-wrap mb-3">
-              {images.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={URL.createObjectURL(img)}
-                  alt="preview"
-                  className="w-20 h-20 object-cover rounded"
-                />
-              ))}
-            </div>
-
+          <div className="modal-action">
             <button
-              className={`btn btn-primary w-full ${loading ? "loading" : ""}`}
+              className={`btn btn-primary ${loading ? "loading" : ""}`}
               onClick={handlePost}
               disabled={loading}
             >
               {loading ? "Posting..." : "Post"}
             </button>
+            <label htmlFor={modalId} className="btn">
+              Cancel
+            </label>
           </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
