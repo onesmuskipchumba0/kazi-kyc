@@ -80,7 +80,7 @@ export default function WorkPost({
         </div>
 
         {/* Content */}
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        <h3 className="text-lg border rounded-md px-2 mb-2 w-fit">{title}</h3>
         <p className="mb-4">{description}</p>
 
         {/* Images */}
