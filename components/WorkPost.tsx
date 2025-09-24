@@ -10,7 +10,6 @@ interface WorkPostProps {
   description: string;
   imageURL: string[];
   likes: number;
-  comments: number;
   shares: number;
   created_at: string;
   author?: {
@@ -28,7 +27,6 @@ export default function WorkPost({
   description,
   imageURL = [],
   likes = 0,
-  comments = 0,
   shares = 0,
   created_at,
   author = {
@@ -41,7 +39,7 @@ export default function WorkPost({
   const timeAgo = new Date(created_at).toLocaleDateString();
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(likes);
-  const [commentsCount, setCommentsCount] = useState(comments);
+  const [commentsCount, setCommentsCount] = useState(0); // ✅ start at 0
   const [showComments, setShowComments] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -51,45 +49,34 @@ export default function WorkPost({
       setCurrentUser(data.user);
     });
 
-    // Check if current user has liked this post
-    if (currentUser) {
-      checkIfLiked();
+    // Fetch comments count
+    fetchCommentsCount();
+
+  }, [id]);
+
+  const fetchCommentsCount = async () => {
+    const { count, error } = await supabase
+      .from('comments')
+      .select('*', { count: 'exact', head: true }) // ✅ get only count
+      .eq('post_id', id);
+
+    if (error) {
+      console.error('Error fetching comments count:', error);
+      return;
     }
-  }, [currentUser, id]);
 
-  const checkIfLiked = async () => {
-    const { data } = await supabase
-      .from('likes')
-      .select('id')
-      .eq('post_id', id)
-      .eq('user_id', currentUser?.id)
-      .single();
-
-    setIsLiked(!!data);
+    setCommentsCount(count || 0);
   };
 
   const handleLike = async () => {
     if (!currentUser) return;
 
     if (isLiked) {
-      // Unlike
-      await supabase
-        .from('likes')
-        .delete()
-        .eq('post_id', id)
-        .eq('user_id', currentUser.id);
-
+      await supabase.from('likes').delete().eq('post_id', id).eq('user_id', currentUser.id);
       await supabase.rpc('decrement_likes', { post_id: id });
       setLikesCount(prev => prev - 1);
     } else {
-      // Like
-      await supabase
-        .from('likes')
-        .insert({
-          post_id: id,
-          user_id: currentUser.id
-        });
-
+      await supabase.from('likes').insert({ post_id: id, user_id: currentUser.id });
       await supabase.rpc('increment_likes', { post_id: id });
       setLikesCount(prev => prev + 1);
     }
@@ -98,7 +85,6 @@ export default function WorkPost({
   };
 
   const handleShare = async () => {
-    // Increment share count
     await supabase.rpc('increment_shares', { post_id: id });
   };
 
@@ -110,11 +96,7 @@ export default function WorkPost({
           <div className="avatar">
             <div className="w-12 h-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
               {author.avatar ? (
-                <img
-                  src={author.avatar}
-                  alt={author.name}
-                  className="rounded-full"
-                />
+                <img src={author.avatar} alt={author.name} className="rounded-full" />
               ) : (
                 <div className="flex items-center justify-center w-full h-full bg-primary text-primary-content font-bold text-xl">
                   {author.name.split(' ').map(n => n[0]).join('')}
@@ -122,7 +104,6 @@ export default function WorkPost({
               )}
             </div>
           </div>
-          
           <div className="flex-1">
             <h4 className="font-semibold">{author.name}</h4>
             <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 border border-gray-200">{author.profession}</span>
@@ -151,12 +132,7 @@ export default function WorkPost({
         {imageURL && imageURL.length > 0 && (
           <div className="grid grid-cols-2 gap-2 mb-4">
             {imageURL.map((url, index) => (
-              <img
-                key={index}
-                src={url}
-                alt={`Post image ${index + 1}`}
-                className="w-full h-48 object-cover rounded-lg"
-              />
+              <img key={index} src={url} alt={`Post image ${index + 1}`} className="w-full h-48 object-cover rounded-lg" />
             ))}
           </div>
         )}
@@ -175,7 +151,7 @@ export default function WorkPost({
             className="flex items-center gap-1 text-sm text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>{commentsCount}</span>
+            <span>{commentsCount}</span> {/* ✅ display dynamic count */}
           </button>
           <button 
             onClick={handleShare}

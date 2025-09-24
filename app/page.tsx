@@ -75,7 +75,6 @@ export default function HomePage() {
                   description={post.description}
                   imageURL={post.imageURL}
                   likes={post.likes}
-                  comments={post.comments}
                   shares={post.shares}
                   created_at={post.created_at}
                   author={post.author}
