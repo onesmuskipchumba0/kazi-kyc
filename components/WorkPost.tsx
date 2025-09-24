@@ -140,13 +140,10 @@ export default function WorkPost({
   const createUserIfNotExists = async (user: any) => {
     try {
       const userData = {
-        id: user.id, // or use a generated UUID
-        public_id: user.id,
         email: user.primaryEmailAddress?.emailAddress,
-        full_name: user.fullName || user.firstName + ' ' + user.lastName,
-        first_name: user.firstName,
-        last_name: user.lastName,
-        image_url: user.imageUrl,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        avatarUrl: user.avatarUrl,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
