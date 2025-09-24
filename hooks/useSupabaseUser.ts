@@ -25,8 +25,7 @@ export function useSupabaseUser() {
     const fetchUser = async () => {
       try {
         const response = await axios.get("/api/user");
-        const user = response.data.user; // ✅ not response.data
-        console.log("Fetched from API:", user);
+        const user = response.data.user;
   
         if (user) {
           setSupabaseUser(user as SupabaseUser);
