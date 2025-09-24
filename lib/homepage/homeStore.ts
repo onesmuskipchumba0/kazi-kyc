@@ -63,31 +63,23 @@ export const useRecentPosts = create<PostStore>((set) => ({
     posts: [],
     fetchPosts: async () => {
         try {
-            console.log('Fetching posts...');
             const { data: posts, error } = await supabase
                 .from('posts')
                 .select('*')
                 .order('created_at', { ascending: false });
 
             if (error) {
-                console.error('Error fetching posts:', error);
-                return;
+                throw error;
             }
 
             const formattedPosts = await Promise.all(posts.map(async post => {
-                console.log('Processing post:', post);
                 let userData = null;
 
                 try {
                     // First, verify the post.userId is in the correct format
                     if (!post.userId) {
-                        console.error('Missing userId in post:', post);
                         throw new Error('Post is missing userId');
                     }
-
-                    console.log('Attempting to fetch user with ID:', post.userId);
-
-                    console.log('Looking up user with public_id:', post.userId);
 
                     // Fetch user data using userId with regular client
                     const { data, error: userError } = await supabase
@@ -104,24 +96,16 @@ export const useRecentPosts = create<PostStore>((set) => ({
                         .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
                     if (userError) {
-                        console.error('Supabase error details:', {
-                            error: userError,
-                            code: userError.code,
-                            message: userError.message,
-                            details: userError.details
-                        });
                         throw userError;
                     }
 
                     if (!data) {
-                        console.error('No user found for ID:', post.userId);
                         throw new Error('User not found');
                     }
 
-                    console.log('Successfully found user:', data);
                     userData = data;
                 } catch (error) {
-                    console.error('Error in user fetch:', error);
+                    // Silent fail - will use anonymous user
                 }
 
                 // Parse imageURL if it's a string
@@ -148,7 +132,7 @@ export const useRecentPosts = create<PostStore>((set) => ({
                     location: "Remote"
                 };
 
-                console.log('Formatted author:', author);
+
 
                 return {
                     ...post,
@@ -159,7 +143,7 @@ export const useRecentPosts = create<PostStore>((set) => ({
 
             set({ posts: formattedPosts });
         } catch (error) {
-            console.error('Error:', error);
+            throw error;
         }
     }
 }))
