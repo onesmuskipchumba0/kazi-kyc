@@ -31,6 +31,7 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
   const [newComment, setNewComment] = useState('');
   const [postStats, setPostStats] = useState<PostStats | null>(null);
   const { supabaseUser: currentUser } = useSupabaseUser();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen && postId) {
@@ -39,8 +40,14 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
     }
   }, [postId, isOpen]);
 
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
   const fetchComments = async () => {
-    // get all comments for this post
     const { data: commentsData, error, count } = await supabase
       .from('comments')
       .select(
@@ -53,7 +60,7 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
           avatarUrl
         )
       `,
-        { count: 'exact' } // ✅ get count
+        { count: 'exact' }
       )
       .eq('post_id', postId)
       .order('created_at', { ascending: false });
@@ -71,7 +78,6 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
   };
 
   const fetchLikes = async () => {
-    // fetch likes from posts table
     const { data, error } = await supabase
       .from('posts')
       .select('likes')
@@ -92,18 +98,18 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!currentUser) {
-      console.log('Please sign in to comment');
-      return;
-    }
+    if (!currentUser || !newComment.trim() || !currentUser?.public_id) return;
 
-    if (!newComment.trim()) {
-      console.log('Comment is empty');
-      return;
-    }
+    // Check if user already commented
+    const { data: existingComment, error: checkError } = await supabase
+      .from('comments')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', currentUser.public_id)
+      .single();
 
-    if (!currentUser?.public_id) {
-      console.error('No public_id found for user');
+    if (existingComment) {
+      setToastMessage('You have already commented on this post');
       return;
     }
 
@@ -119,81 +125,92 @@ export default function Comments({ postId, isOpen }: CommentsProps) {
     }
 
     setNewComment('');
-    await fetchComments(); // ✅ refresh count + list
+    await fetchComments();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="mt-4 border-t pt-4">
-      {/* ✅ Post stats */}
-      {postStats && (
-        <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
-          <span>{postStats.comments} Comments</span>
-          <span className="flex items-center gap-1">
-            <ThumbsUp className="w-4 h-4" /> {postStats.likes} Likes
-          </span>
-        </div>
-      )}
-
-      {/* ✅ Add comment form */}
-      {currentUser ? (
-        <form onSubmit={handleSubmitComment} className="flex gap-2 mb-4">
-          <input
-            type="text"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write a comment..."
-            className="flex-1 input input-bordered input-sm"
-          />
-          <button
-            type="submit"
-            disabled={!newComment.trim()}
-            className="btn btn-primary btn-sm"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
-      ) : (
-        <div className="alert alert-info mb-4">
-          Please sign in to leave a comment.
-        </div>
-      )}
-
-      {/* ✅ Comments list */}
-      <div className="space-y-4">
-        {comments.map((comment) => (
-          <div key={comment.id} className="flex gap-3">
-            <div className="avatar">
-              <div className="w-8 h-8 rounded-full">
-                {comment.user?.avatarUrl ? (
-                  <img
-                    src={comment.user.avatarUrl}
-                    alt={`${comment.user.firstName} ${comment.user.lastName}`}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-full h-full bg-primary text-primary-content font-bold">
-                    {comment.user?.firstName?.[0]}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">
-                  {comment.user
-                    ? `${comment.user.firstName} ${comment.user.lastName}`
-                    : 'Unknown User'}
-                </span>
-                <span className="text-xs text-gray-500">
-                  {new Date(comment.created_at).toLocaleDateString()}
-                </span>
-              </div>
-              <p className="text-sm mt-1">{comment.comment}</p>
-            </div>
+    <>
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50">
+          <div className="alert alert-warning shadow-lg">
+            <span>{toastMessage}</span>
           </div>
-        ))}
+        </div>
+      )}
+
+      <div className="mt-4 border-t pt-4">
+        {/* Post stats */}
+        {postStats && (
+          <div className="flex items-center gap-4 mb-4 text-sm text-gray-600">
+            <span>{postStats.comments} Comments</span>
+            <span className="flex items-center gap-1">
+              <ThumbsUp className="w-4 h-4" /> {postStats.likes} Likes
+            </span>
+          </div>
+        )}
+
+        {/* Add comment form */}
+        {currentUser ? (
+          <form onSubmit={handleSubmitComment} className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Write a comment..."
+              className="flex-1 input input-bordered input-sm"
+            />
+            <button
+              type="submit"
+              disabled={!newComment.trim()}
+              className="btn btn-primary btn-sm"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        ) : (
+          <div className="alert alert-info mb-4">
+            Please sign in to leave a comment.
+          </div>
+        )}
+
+        {/* Comments list */}
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <div key={comment.id} className="flex gap-3">
+              <div className="avatar">
+                <div className="w-8 h-8 rounded-full">
+                  {comment.user?.avatarUrl ? (
+                    <img
+                      src={comment.user.avatarUrl}
+                      alt={`${comment.user.firstName} ${comment.user.lastName}`}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center w-full h-full bg-primary text-primary-content font-bold">
+                      {comment.user?.firstName?.[0]}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">
+                    {comment.user
+                      ? `${comment.user.firstName} ${comment.user.lastName}`
+                      : 'Unknown User'}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(comment.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm mt-1">{comment.comment}</p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
