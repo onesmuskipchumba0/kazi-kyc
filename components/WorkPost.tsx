@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, MessageCircle, Share, MapPin, Clock, Star } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+import Comments from "./Comments";
 
 interface WorkPostProps {
   id: string;
@@ -11,6 +13,7 @@ interface WorkPostProps {
   comments: number;
   shares: number;
   created_at: string;
+  userId: string; // Add userId to props
   author?: {
     name: string;
     profession: string;
@@ -21,6 +24,7 @@ interface WorkPostProps {
 }
 
 export default function WorkPost({ 
+  id,
   title,
   description,
   imageURL = [],
@@ -28,6 +32,7 @@ export default function WorkPost({
   comments = 0,
   shares = 0,
   created_at,
+  userId,
   author = {
     name: "Anonymous",
     profession: "Professional",
@@ -37,6 +42,67 @@ export default function WorkPost({
 }: WorkPostProps) {
   const timeAgo = new Date(created_at).toLocaleDateString();
   const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(likes);
+  const [commentsCount, setCommentsCount] = useState(comments);
+  const [showComments, setShowComments] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Get current user
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUser(data.user);
+    });
+
+    // Check if current user has liked this post
+    if (currentUser) {
+      checkIfLiked();
+    }
+  }, [currentUser, id]);
+
+  const checkIfLiked = async () => {
+    const { data } = await supabase
+      .from('likes')
+      .select('id')
+      .eq('post_id', id)
+      .eq('user_id', currentUser?.id)
+      .single();
+
+    setIsLiked(!!data);
+  };
+
+  const handleLike = async () => {
+    if (!currentUser) return;
+
+    if (isLiked) {
+      // Unlike
+      await supabase
+        .from('likes')
+        .delete()
+        .eq('post_id', id)
+        .eq('user_id', currentUser.id);
+
+      await supabase.rpc('decrement_likes', { post_id: id });
+      setLikesCount(prev => prev - 1);
+    } else {
+      // Like
+      await supabase
+        .from('likes')
+        .insert({
+          post_id: id,
+          user_id: currentUser.id
+        });
+
+      await supabase.rpc('increment_likes', { post_id: id });
+      setLikesCount(prev => prev + 1);
+    }
+
+    setIsLiked(!isLiked);
+  };
+
+  const handleShare = async () => {
+    // Increment share count
+    await supabase.rpc('increment_shares', { post_id: id });
+  };
 
   return (
     <div className="card bg-base-100 shadow-sm border border-base-200">
@@ -100,21 +166,30 @@ export default function WorkPost({
         {/* Actions */}
         <div className="flex items-center gap-4 mt-4 border-t pt-4">
           <button
-            onClick={() => setIsLiked(!isLiked)}
+            onClick={handleLike}
             className={`flex items-center gap-1 text-sm px-2 py-1 rounded hover:bg-gray-100 transition ${isLiked ? 'text-red-500' : 'text-gray-700'}`}
           >
             <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-            <span>{likes}</span>
+            <span>{likesCount}</span>
           </button>
-          <button className="flex items-center gap-1 text-sm text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition">
+          <button 
+            onClick={() => setShowComments(!showComments)}
+            className="flex items-center gap-1 text-sm text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition"
+          >
             <MessageCircle className="w-4 h-4" />
-            <span>{comments}</span>
+            <span>{commentsCount}</span>
           </button>
-          <button className="flex items-center gap-1 text-sm text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition">
+          <button 
+            onClick={handleShare}
+            className="flex items-center gap-1 text-sm text-gray-700 px-2 py-1 rounded hover:bg-gray-100 transition"
+          >
             <Share className="w-4 h-4" />
             <span>{shares}</span>
           </button>
         </div>
+
+        {/* Comments Section */}
+        <Comments postId={id} isOpen={showComments} />
       </div>
     </div>
   );
