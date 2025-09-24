@@ -13,7 +13,6 @@ interface WorkPostProps {
   comments: number;
   shares: number;
   created_at: string;
-  userId: string; // Add userId to props
   author?: {
     name: string;
     profession: string;
@@ -32,7 +31,6 @@ export default function WorkPost({
   comments = 0,
   shares = 0,
   created_at,
-  userId,
   author = {
     name: "Anonymous",
     profession: "Professional",
