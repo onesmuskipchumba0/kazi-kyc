@@ -64,6 +64,37 @@ CREATE POLICY "Users can delete own portfolio images" ON storage.objects
     AND auth.uid()::text = (storage.foldername(name))[1]
   );
 
+-- Allow users to insert posts where their public_id matches
+create policy "Users can insert their own posts"
+on posts
+for insert
+to authenticated
+with check (
+  public_id = (select public_id from "user" where email = auth.email())
+);
+
+create policy "Allow logged in users to insert posts"
+on posts
+for insert
+with check (auth.uid() = user_id);
+
+
+-- Allow users to select only their own posts
+create policy "Users can select their own posts"
+on posts
+for select
+to authenticated
+using (
+  public_id = (select public_id from "user" where email = auth.email())
+);
+
+create policy "Allow anyone to insert posts"
+on posts
+for insert
+with check (true);
+
+
+
 -- Create function to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
