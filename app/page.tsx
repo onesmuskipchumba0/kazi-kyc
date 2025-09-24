@@ -68,7 +68,18 @@ export default function HomePage() {
             {/* Work Posts */}
             <div className="space-y-6">
               {posts.map((post) => (
-                <WorkPost key={post.id} {...post} />
+                <WorkPost 
+                  key={post.id}
+                  id={post.id}
+                  title={post.title}
+                  description={post.description}
+                  imageURL={post.imageURL}
+                  likes={post.likes}
+                  comments={post.comments}
+                  shares={post.shares}
+                  created_at={post.created_at}
+                  author={post.author}
+                />
               ))}
             </div>
 
