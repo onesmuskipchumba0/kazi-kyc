@@ -70,7 +70,7 @@ export default function HomePage() {
               {posts.map((post) => (
                 <WorkPost 
                   key={post.id}
-                  id={post.id}
+                  id={Number(post.id)}
                   title={post.title}
                   description={post.description}
                   imageURL={post.imageURL}

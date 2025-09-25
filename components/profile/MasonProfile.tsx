@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { supabaseAdmin } from '@/lib/supabaseClient';
 
 interface MasonProfileProps {
-  mason: any;
+  mason?: any;
 }
 
 const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
