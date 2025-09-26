@@ -17,6 +17,7 @@ interface JobListing {
   pay_rate: string;
   pay_type: "hourly" | "daily" | "monthly" | "project";
   urgent?: boolean;
+  status: "open" | "closed"
   applicants_count: number;
   created_at: string;
   user?: {
@@ -33,6 +34,7 @@ interface UseWork {
   error: string | null;
   fetchJobs: () => Promise<void>;
   fetchUser: () => Promise<void>;
+  postJobs: (job: any) => Promise<void>;
 }
 
 // Helper function to transform Supabase data to match your frontend interface
@@ -55,6 +57,7 @@ const transformJobData = (job: any): JobListing => {
     requirements: job.requirements || [],
     pay_rate: job.pay_rate,
     pay_type: job.pay_type,
+    status: job.status,
     urgent: job.urgent || false,
     applicants_count: job.applicants_count || 0,
     created_at: job.created_at,
@@ -66,6 +69,33 @@ export const useWorkStore = create<UseWork>((set) => ({
   jobs: [],
   isLoading: false,
   error: null,
+postJobs: async (job: any) => {
+  try {
+    const res = await axios.get("/api/user");
+    const user = res.data.user;
+
+    if (!user) {
+      console.log("No user found");
+      return;
+    }
+
+    // send job data to backend
+    const post_res = await axios.post("/api/jobs", {
+      public_id: user.public_id,
+      email: user.email,
+      job,
+    });
+
+    console.log("Backend response: ", post_res.data);
+
+    // ✅ refresh user after posting
+    const { fetchUser } = useWorkStore.getState();
+    await fetchUser();
+
+  } catch (error) {
+    console.log(`An error occurred: ${error}`);
+  }
+},
   fetchUser: async() => {
     try{
     const res = await axios.get("/api/user");

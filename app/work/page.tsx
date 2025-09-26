@@ -1,269 +1,217 @@
 "use client";
+
+import React, { useState } from "react";
 import { useWorkStore } from "@/lib/work/WorkStore";
 import { useUserStore } from "@/lib/user/UserStore";
-import { useRouter } from "next/navigation";
-import {
-  Search,
-  Filter,
-  Plus,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
 
-export default function FindWorkPage() {
-  const jobs = useWorkStore((state) => state.jobs);
-  const isLoading = useWorkStore((state) => state.isLoading);
-  const error = useWorkStore((state) => state.error);
-  const fetchJobs = useWorkStore((state) => state.fetchJobs);
+export default function WorkPage() {
+  const { jobs, fetchJobs, postJobs } = useWorkStore();
+  const { fetchUser } = useUserStore();
 
-  // ✅ Get user from store
-  const user = useUserStore((state) => state.user);
-  const fetchUser = useUserStore((state) => state.fetchUser);
+  const [jobData, setJobData] = useState({
+    title: "",
+    description: "",
+    requirements: [] as string[],
+    pay_rate: "",
+    pay_type: "hourly",
+    urgent: false,
+    status: "open",
+  });
+  const [newRequirement, setNewRequirement] = useState("");
 
-  const [selectedCategory, setSelectedCategory] = useState("All Jobs");
-  const [selectedLocation, setSelectedLocation] = useState("All Locations");
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const router = useRouter();
-
-  useEffect(() => {
-    fetchJobs();
-    fetchUser();
-  }, [fetchJobs, fetchUser]);
-
-  // ✅ Open Modal
-  const handlePostJob = () => {
-    setIsModalOpen(true);
+  const handleAddRequirement = () => {
+    if (newRequirement.trim()) {
+      setJobData({
+        ...jobData,
+        requirements: [...jobData.requirements, newRequirement.trim()],
+      });
+      setNewRequirement("");
+    }
   };
 
-  const isEmployer = user?.profileType === "employer";
-
-  const filteredJobs = useMemo(() => {
-    if (!jobs) return [];
-    return jobs.filter((job) => {
-      const matchesCategory =
-        selectedCategory === "All Jobs" || job.category === selectedCategory;
-      const matchesLocation =
-        selectedLocation === "All Locations" ||
-        job.location.toLowerCase().includes(selectedLocation.toLowerCase());
-      const matchesSearch =
-        searchTerm === "" ||
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        job.requirements.some((req) =>
-          req.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      return matchesCategory && matchesLocation && matchesSearch;
+  const handlePostJob = async () => {
+    await postJobs(jobData);
+    await fetchJobs();
+    await fetchUser();
+    (document.getElementById("post-job-modal") as HTMLDialogElement).close();
+    setJobData({
+      title: "",
+      description: "",
+      requirements: [],
+      pay_rate: "",
+      pay_type: "hourly",
+      urgent: false,
+      status: "open",
     });
-  }, [jobs, selectedCategory, selectedLocation, searchTerm]);
+  };
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">Find Work Opportunities</h1>
-          {isEmployer && (
-            <button
-              onClick={handlePostJob}
-              className="btn btn-primary gap-2 hidden md:flex"
-            >
-              <Plus className="w-4 h-4" />
-              Post a Job
-            </button>
-          )}
-        </div>
-
-        {/* Search + Filters */}
-        <div className="flex items-center gap-4 mt-6 bg-base-100 p-4 rounded-xl shadow-sm border border-base-200">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search jobs..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input w-full pl-10 rounded-full bg-base-200 border-0"
-            />
-          </div>
-          <select
-            value={selectedLocation}
-            onChange={(e) => setSelectedLocation(e.target.value)}
-            className="select w-48 rounded-full bg-base-200 border-0"
-          >
-            <option>All Locations</option>
-            <option>Westlands</option>
-            <option>Karen</option>
-            <option>Kilimani</option>
-            <option>CBD</option>
-            <option>Industrial Area</option>
-          </select>
-          <button
-            onClick={() => fetchUser()}
-            type="button"
-            className="btn btn-primary gap-2 rounded-full shadow-sm"
-          >
-            <Filter className="w-4 h-4" /> Filters
-          </button>
-        </div>
-
-        {/* Jobs Listing */}
-        <div className="mt-6">
-          {isLoading ? (
-            <p>Loading...</p>
-          ) : filteredJobs.length > 0 ? (
-            filteredJobs.map((job) => (
-              <div key={job.id} className="p-4 border rounded-lg mb-3">
-                {job.title}
-              </div>
-            ))
-          ) : (
-            <p>No jobs found.</p>
-          )}
-        </div>
+    <div className="p-6 max-w-5xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Jobs</h1>
+        <button
+          className="btn btn-primary"
+          onClick={() =>
+            (document.getElementById("post-job-modal") as HTMLDialogElement).showModal()
+          }
+        >
+          Post Job
+        </button>
       </div>
 
-      {/* ✅ DaisyUI Modal */}
-          {isModalOpen && (
-      <dialog open className="modal modal-bottom sm:modal-middle">
-        <div className="modal-box">
-          <h3 className="font-bold text-lg">Post a Job</h3>
+      {/* Jobs List */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {jobs.length === 0 ? (
+          <p className="text-gray-500">No jobs available</p>
+        ) : (
+          jobs.map((job) => (
+            <div key={job.id} className="card shadow-md bg-base-100">
+              <div className="card-body">
+                <h2 className="card-title">{job.title}</h2>
+                <p>{job.description}</p>
+                <p className="text-sm text-gray-500">
+                  {job.pay_rate} ({job.pay_type})
+                </p>
+                <p className="text-sm">
+                  Requirements: {job.requirements?.join(", ")}
+                </p>
+                <div className="flex justify-between items-center mt-2">
+                  <span
+                    className={`badge ${
+                      job.urgent ? "badge-error" : "badge-ghost"
+                    }`}
+                  >
+                    {job.urgent ? "Urgent" : "Not urgent"}
+                  </span>
+                  <span className="badge badge-outline">{job.status}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
 
-          <form
-            method="dialog"
-            className="space-y-3 mt-4"
-            onSubmit={async (e) => {
-              e.preventDefault();
+      {/* DaisyUI Modal */}
+      <dialog id="post-job-modal" className="modal">
+        <div className="modal-box w-11/12 max-w-2xl">
+          <h3 className="font-bold text-lg mb-4">Post a Job</h3>
 
-              const formData = new FormData(e.currentTarget);
-
-              // split requirements by newline
-              const requirements = (formData.get("requirements") as string)
-                .split("\n")
-                .map((r) => r.trim())
-                .filter((r) => r !== "");
-
-              
-              const jobData = {
-                title: formData.get("title"),
-                description: formData.get("description"),
-                location: formData.get("location"),
-                category: formData.get("category"),
-                requirements,
-                pay_rate: formData.get("pay_rate"),
-                pay_type: formData.get("pay_type"),
-                urgent: formData.get("urgent") === "on",
-                status: formData.get("status"),
-              };
-
-              // ✅ Send to backend
-              try {
-                const res = await fetch("/api/jobs", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(jobData),
-                });
-                const data = await res.json();
-                console.log("Job posted:", data);
-                setIsModalOpen(false);
-              } catch (err) {
-                console.error("Error posting job:", err);
-              }
-            }}
-          >
-            {/* Job Title */}
+          <div className="form-control mb-3">
             <input
               type="text"
-              name="title"
               placeholder="Job Title"
+              value={jobData.title}
+              onChange={(e) => setJobData({ ...jobData, title: e.target.value })}
               className="input input-bordered w-full"
-              required
             />
+          </div>
 
-            {/* Description */}
+          <div className="form-control mb-3">
             <textarea
-              name="description"
-              placeholder="Job Description"
+              placeholder="Description"
+              value={jobData.description}
+              onChange={(e) =>
+                setJobData({ ...jobData, description: e.target.value })
+              }
               className="textarea textarea-bordered w-full"
-              required
             />
+          </div>
 
-            {/* Location */}
-            <input
-              type="text"
-              name="location"
-              placeholder="Location"
-              className="input input-bordered w-full"
-            />
-
-            {/* Category */}
-            <input
-              type="text"
-              name="category"
-              placeholder="Category"
-              className="input input-bordered w-full"
-            />
-
-            {/* Requirements (multi-line) */}
-            <textarea
-              name="requirements"
-              placeholder="Enter each requirement on a new line"
-              className="textarea textarea-bordered w-full"
-              required
-            />
-
-            {/* Pay Rate */}
-            <input
-              type="text"
-              name="pay_rate"
-              placeholder="Pay Rate (e.g. 2000 KES)"
-              className="input input-bordered w-full"
-              required
-            />
-
-            {/* Pay Type Dropdown */}
-            <select name="pay_type" className="select select-bordered w-full" required>
-              <option disabled selected>
-                Select Pay Type
-              </option>
-              <option value="hourly">Hourly</option>
-              <option value="daily">Daily</option>
-              <option value="monthly">Monthly</option>
-              <option value="project">Project</option>
-            </select>
-
-            {/* Urgent Checkbox */}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" name="urgent" className="checkbox" />
-              <span>Mark as Urgent</span>
+          {/* Requirements */}
+          <div className="form-control mb-3">
+            <label className="label">
+              <span className="label-text">Requirements</span>
             </label>
-
-            {/* Status Dropdown */}
-            <select name="status" className="select select-bordered w-full" required>
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-              <option value="draft">Draft</option>
-            </select>
-
-            {/* Actions */}
-            <div className="modal-action">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add requirement"
+                value={newRequirement}
+                onChange={(e) => setNewRequirement(e.target.value)}
+                className="input input-bordered flex-1"
+              />
               <button
+                onClick={handleAddRequirement}
+                className="btn btn-outline"
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="btn"
               >
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-primary">
-                Post
+                Add
               </button>
             </div>
-          </form>
+            <ul className="mt-2 list-disc list-inside text-sm">
+              {jobData.requirements.map((req, idx) => (
+                <li key={idx}>{req}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Pay Rate */}
+          <div className="form-control mb-3">
+            <input
+              type="text"
+              placeholder="Pay Rate"
+              value={jobData.pay_rate}
+              onChange={(e) =>
+                setJobData({ ...jobData, pay_rate: e.target.value })
+              }
+              className="input input-bordered w-full"
+            />
+          </div>
+
+          {/* Pay Type */}
+          <div className="form-control mb-3">
+            <select
+              value={jobData.pay_type}
+              onChange={(e) =>
+                setJobData({ ...jobData, pay_type: e.target.value })
+              }
+              className="select select-bordered w-full"
+            >
+              <option value="hourly">Hourly</option>
+              <option value="fixed">Fixed</option>
+            </select>
+          </div>
+
+          {/* Urgent */}
+          <div className="form-control mb-3">
+            <label className="cursor-pointer flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={jobData.urgent}
+                onChange={(e) =>
+                  setJobData({ ...jobData, urgent: e.target.checked })
+                }
+                className="checkbox"
+              />
+              <span className="label-text">Urgent</span>
+            </label>
+          </div>
+
+          {/* Status */}
+          <div className="form-control mb-3">
+            <select
+              value={jobData.status}
+              onChange={(e) =>
+                setJobData({ ...jobData, status: e.target.value })
+              }
+              className="select select-bordered w-full"
+            >
+              <option value="open">Open</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+
+          {/* Actions */}
+          <div className="modal-action">
+            <form method="dialog" className="flex gap-2">
+              <button className="btn">Cancel</button>
+              <button type="button" onClick={handlePostJob} className="btn btn-primary">
+                Post Job
+              </button>
+            </form>
+          </div>
         </div>
       </dialog>
-    )}
-
     </div>
   );
 }
