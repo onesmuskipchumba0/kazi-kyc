@@ -20,7 +20,7 @@ export async function GET() {
 
     const { data, error } = await supabaseAdmin
       .from("user")
-      .select("public_id, email, firstName, lastName, phoneNumber")
+      .select("public_id, email, firstName, lastName, phoneNumber, profileType")
       .eq("email", email)
       .single(); // force exactly one row
 

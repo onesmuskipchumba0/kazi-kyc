@@ -32,6 +32,7 @@ interface UseWork {
   isLoading: boolean;
   error: string | null;
   fetchJobs: () => Promise<void>;
+  fetchUser: () => Promise<void>;
 }
 
 // Helper function to transform Supabase data to match your frontend interface
@@ -65,6 +66,24 @@ export const useWorkStore = create<UseWork>((set) => ({
   jobs: [],
   isLoading: false,
   error: null,
+  fetchUser: async() => {
+    try{
+    const res = await axios.get("/api/user");
+    const user = res.data.user;
+
+    if(!user) console.log("No user found");
+
+    // query supabase
+    const post_res = await axios.post("/api/jobs", {
+      public_id: user.public_id,
+      email: user.email
+    })
+    console.log("Backend response: ", post_res.data )
+
+  } catch (error){
+    console.log(`An error occured: ${error}`)
+  }
+  },
   fetchJobs: async () => {
     set({ isLoading: true, error: null });
     try {
