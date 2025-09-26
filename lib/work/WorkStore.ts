@@ -35,6 +35,7 @@ interface UseWork {
   fetchJobs: () => Promise<void>;
   fetchUser: () => Promise<any>;
   postJobs: (job: any) => Promise<void>;
+  fetchUserById: (public_id: string) => Promise<void>
 }
 
 const transformJobData = (job: any): JobListing => {
@@ -68,7 +69,16 @@ export const useWorkStore = create<UseWork>((set) => ({
   jobs: [],
   isLoading: false,
   error: null,
-
+  // Add this function to your workStore.ts
+fetchUserById: async (public_id: string) => {
+  try {
+    const res = await axios.get(`/api/user/${public_id}`);
+    return res.data.user;
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    return null;
+  }
+},
   // ✅ Correct postJobs
 postJobs: async (job: any) => {
   try {
