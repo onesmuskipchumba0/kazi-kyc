@@ -144,6 +144,7 @@ export default function FindWorkPage() {
                 .map((r) => r.trim())
                 .filter((r) => r !== "");
 
+              
               const jobData = {
                 title: formData.get("title"),
                 description: formData.get("description"),
