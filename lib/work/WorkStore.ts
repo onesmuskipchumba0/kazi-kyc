@@ -2,7 +2,7 @@ import axios from "axios";
 import { create } from "zustand";
 
 interface JobListing {
-  id: string;
+  id: number; // Supabase uses int8
   title: string;
   employer: {
     name: string;
@@ -17,7 +17,7 @@ interface JobListing {
   pay_rate: string;
   pay_type: "hourly" | "daily" | "monthly" | "project";
   urgent?: boolean;
-  status: "open" | "closed"
+  status: "open" | "closed";
   applicants_count: number;
   created_at: string;
   user?: {
@@ -33,23 +33,22 @@ interface UseWork {
   isLoading: boolean;
   error: string | null;
   fetchJobs: () => Promise<void>;
-  fetchUser: () => Promise<void>;
+  fetchUser: () => Promise<any>;
   postJobs: (job: any) => Promise<void>;
 }
 
-// Helper function to transform Supabase data to match your frontend interface
 const transformJobData = (job: any): JobListing => {
-  const employerName = job.user 
+  const employerName = job.user
     ? `${job.user.firstName} ${job.user.lastName}`
-    : 'Employer';
+    : "Employer";
 
   return {
     id: job.id,
     title: job.title,
     employer: {
       name: employerName,
-      rating: 4.5, // Default rating - you might want to add this to your database
-      verified: true // Default verified - you might want to add this to your database
+      rating: 4.5,
+      verified: true,
     },
     category: job.category,
     location: job.location,
@@ -61,7 +60,7 @@ const transformJobData = (job: any): JobListing => {
     urgent: job.urgent || false,
     applicants_count: job.applicants_count || 0,
     created_at: job.created_at,
-    user: job.user
+    user: job.user,
   };
 };
 
@@ -69,17 +68,18 @@ export const useWorkStore = create<UseWork>((set) => ({
   jobs: [],
   isLoading: false,
   error: null,
+
+  // ✅ Correct postJobs
 postJobs: async (job: any) => {
   try {
     const res = await axios.get("/api/user");
     const user = res.data.user;
 
-    if (!user) {
-      console.log("No user found");
-      return;
+    if (!user || !user.public_id) {
+      console.error("No user found or missing public_id");
+      throw new Error("User not authenticated");
     }
 
-    // send job data to backend
     const post_res = await axios.post("/api/jobs", {
       public_id: user.public_id,
       email: user.email,
@@ -88,45 +88,45 @@ postJobs: async (job: any) => {
 
     console.log("Backend response: ", post_res.data);
 
-    // ✅ refresh user after posting
-    const { fetchUser } = useWorkStore.getState();
-    await fetchUser();
-
-  } catch (error) {
-    console.log(`An error occurred: ${error}`);
+    // Refresh jobs after posting
+    await useWorkStore.getState().fetchJobs();
+  } catch (error: any) {
+    console.error("Error posting job:", error.response?.data || error.message);
+    throw error; // Re-throw to handle in component
   }
 },
-  fetchUser: async() => {
-    try{
-    const res = await axios.get("/api/user");
-    const user = res.data.user;
 
-    if(!user) console.log("No user found");
+  // ✅ Fixed fetchUser (only fetches user)
+  fetchUser: async () => {
+    try {
+      const res = await axios.get("/api/user");
+      const user = res.data.user;
 
-    // query supabase
-    const post_res = await axios.post("/api/jobs", {
-      public_id: user.public_id,
-      email: user.email
-    })
-    console.log("Backend response: ", post_res.data )
+      if (!user) {
+        console.log("No user found");
+        return null;
+      }
 
-  } catch (error){
-    console.log(`An error occured: ${error}`)
-  }
+      return user;
+    } catch (error) {
+      console.log(`An error occurred: ${error}`);
+      return null;
+    }
   },
+
+  // ✅ Fetch jobs
   fetchJobs: async () => {
     set({ isLoading: true, error: null });
     try {
-      // Change this to your actual jobs API endpoint
       const res = await axios.get("/api/jobs");
       const data = res.data;
-      
-      // Transform the data to match your frontend interface
+
       const transformedJobs = data.jobs ? data.jobs.map(transformJobData) : [];
-      
+
       set({ jobs: transformedJobs });
     } catch (err: any) {
-      const errorMessage = err.response?.data?.error || "Failed to load jobs. Please try again.";
+      const errorMessage =
+        err.response?.data?.error || "Failed to load jobs. Please try again.";
       set({ error: errorMessage });
       console.error("Error fetching jobs:", err);
     } finally {
