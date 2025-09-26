@@ -29,6 +29,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // gets user data
     return NextResponse.json({ user: data }, { status: 200 });
   } catch (error: any) {
     console.error("Route error:", error.message);
