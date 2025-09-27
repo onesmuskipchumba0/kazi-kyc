@@ -1,21 +1,25 @@
+// lib/work/WorkStore.ts
 import axios from "axios";
 import { create } from "zustand";
 
+interface Employer {
+  name: string;
+  avatarUrl?: string;
+  rating: number;
+  verified: boolean;
+}
+
 interface JobListing {
-  id: number; // Supabase uses int8
+  id: string;
   title: string;
-  employer: {
-    name: string;
-    avatar?: string;
-    rating: number;
-    verified: boolean;
-  };
+  employer: Employer;
+  employer_id?: string;
   category: string;
   location: string;
   description: string;
   requirements: string[];
   pay_rate: string;
-  pay_type: "hourly" | "daily" | "monthly" | "project";
+  pay_type: "hourly" | "fixed" | "daily" | "monthly" | "project";
   urgent?: boolean;
   status: "open" | "closed";
   applicants_count: number;
@@ -35,7 +39,8 @@ interface UseWork {
   fetchJobs: () => Promise<void>;
   fetchUser: () => Promise<any>;
   postJobs: (job: any) => Promise<void>;
-  fetchUserById: (public_id: string) => Promise<void>
+  fetchUserById: (public_id: string) => Promise<any>;
+  applyToJob: (jobId: string, coverLetter?: string) => Promise<any>;
 }
 
 const transformJobData = (job: any): JobListing => {
@@ -48,9 +53,11 @@ const transformJobData = (job: any): JobListing => {
     title: job.title,
     employer: {
       name: employerName,
+      avatarUrl: job.user?.avatarUrl,
       rating: 4.5,
       verified: true,
     },
+    employer_id: job.employer_id,
     category: job.category,
     location: job.location,
     description: job.description,
@@ -65,66 +72,75 @@ const transformJobData = (job: any): JobListing => {
   };
 };
 
-export const useWorkStore = create<UseWork>((set) => ({
+export const useWorkStore = create<UseWork>((set, get) => ({
   jobs: [],
   isLoading: false,
   error: null,
-  // Add this function to your workStore.ts
-fetchUserById: async (public_id: string) => {
-  try {
-    const res = await axios.get(`/api/user/${public_id}`);
-    return res.data.user;
-  } catch (error) {
-    console.error("Error fetching user:", error);
-    return null;
-  }
-},
-  // ✅ Correct postJobs
-postJobs: async (job: any) => {
-  try {
-    const res = await axios.get("/api/user");
-    const user = res.data.user;
 
-    if (!user || !user.public_id) {
-      console.error("No user found or missing public_id");
-      throw new Error("User not authenticated");
-    }
-
-    const post_res = await axios.post("/api/jobs", {
-      public_id: user.public_id,
-      email: user.email,
-      job,
-    });
-
-    console.log("Backend response: ", post_res.data);
-
-    // Refresh jobs after posting
-    await useWorkStore.getState().fetchJobs();
-  } catch (error: any) {
-    console.error("Error posting job:", error.response?.data || error.message);
-    throw error; // Re-throw to handle in component
-  }
-},
-
-  // ✅ Fixed fetchUser (only fetches user)
-  fetchUser: async () => {
+  fetchUserById: async (public_id: string) => {
     try {
-      const res = await axios.get("/api/user");
-      const user = res.data.user;
-
-      if (!user) {
-        console.log("No user found");
-        return null;
-      }
-
-      return user;
+      const res = await axios.get(`/api/user/${public_id}`);
+      return res.data.user;
     } catch (error) {
-      console.log(`An error occurred: ${error}`);
+      console.error("Error fetching user:", error);
       return null;
     }
   },
 
-  // ✅ Fetch jobs
+  applyToJob: async (jobId: string, coverLetter: string = "") => {
+    try {
+      const res = await axios.get("/api/user");
+      const user = res.data.user;
+
+      if (!user || !user.public_id) {
+        throw new Error("User not authenticated");
+      }
+
+      const applyRes = await axios.post(`/api/jobs/${jobId}/apply`, {
+        applicant_id: user.public_id,
+        cover_letter: coverLetter,
+      });
+
+      return applyRes.data;
+    } catch (error: any) {
+      console.error("Error applying to job:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  postJobs: async (job: any) => {
+    try {
+      const res = await axios.get("/api/user");
+      const user = res.data.user;
+
+      if (!user || !user.public_id) {
+        throw new Error("User not authenticated");
+      }
+
+      const postRes = await axios.post("/api/jobs", {
+        public_id: user.public_id,
+        email: user.email,
+        job,
+      });
+
+      await get().fetchJobs();
+      return postRes.data;
+    } catch (error: any) {
+      console.error("Error posting job:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  fetchUser: async () => {
+    try {
+      const res = await axios.get("/api/user");
+      return res.data.user;
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      return null;
+    }
+  },
+
   fetchJobs: async () => {
     set({ isLoading: true, error: null });
     try {
@@ -132,11 +148,9 @@ postJobs: async (job: any) => {
       const data = res.data;
 
       const transformedJobs = data.jobs ? data.jobs.map(transformJobData) : [];
-
       set({ jobs: transformedJobs });
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.error || "Failed to load jobs. Please try again.";
+      const errorMessage = err.response?.data?.error || "Failed to load jobs";
       set({ error: errorMessage });
       console.error("Error fetching jobs:", err);
     } finally {

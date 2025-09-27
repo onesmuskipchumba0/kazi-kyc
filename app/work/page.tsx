@@ -8,21 +8,23 @@ import {
   FiMapPin, 
   FiDollarSign, 
   FiUser, 
-  FiClock, 
   FiBriefcase,
   FiPlus,
   FiX,
   FiCheck,
-  FiCalendar
+  FiCalendar,
+  FiSend
 } from "react-icons/fi";
-import { 
-  FaRegBuilding, 
-  FaRegClock, 
-  FaFire 
-} from "react-icons/fa";
+import { FaFire } from "react-icons/fa";
+
+interface EmployerInfo {
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string;
+}
 
 export default function WorkPage() {
-  const { jobs, fetchJobs, postJobs, isLoading, fetchUserById } = useWorkStore();
+  const { jobs, fetchJobs, postJobs, isLoading, fetchUserById, applyToJob } = useWorkStore();
   const { fetchUser } = useUserStore();
 
   const [jobData, setJobData] = useState({
@@ -30,9 +32,9 @@ export default function WorkPage() {
     description: "",
     requirements: [] as string[],
     pay_rate: "",
-    pay_type: "hourly",
+    pay_type: "hourly" as "hourly" | "fixed",
     urgent: false,
-    status: "open",
+    status: "open" as "open" | "closed",
     location: "",
     category: "",
   });
@@ -41,24 +43,54 @@ export default function WorkPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [userCache, setUserCache] = useState<{[key: string]: any}>({});
+  const [userCache, setUserCache] = useState<{[key: string]: EmployerInfo}>({});
+  const [coverLetter, setCoverLetter] = useState("");
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
 
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Fetch user data for a job
+  // Fetch user data for a job and update cache
   const fetchJobUser = async (employerId: string) => {
+    if (!employerId) return null;
+    
     if (userCache[employerId]) return userCache[employerId];
     
-    const user = await fetchUserById(employerId);
-    if (user) {
-      setUserCache(prev => ({ ...prev, [employerId]: user }));
+    try {
+      const user = await fetchUserById(employerId);
+      if (user) {
+        const employerInfo = {
+          firstName: user.firstName || "Unknown",
+          lastName: user.lastName || "Employer",
+          avatarUrl: user.avatarUrl
+        };
+        setUserCache(prev => ({ ...prev, [employerId]: employerInfo }));
+        return employerInfo;
+      }
+    } catch (error) {
+      console.error("Error fetching employer:", error);
     }
-    return user;
+    return null;
   };
 
-  // Filter jobs based on search and filters
+  // Load employer data for all jobs on component mount
+  useEffect(() => {
+    const loadEmployers = async () => {
+      const jobsWithEmployers = jobs.filter(job => job.employer_id);
+      for (const job of jobsWithEmployers) {
+        if (job.employer_id && !userCache[job.employer_id]) {
+          await fetchJobUser(job.employer_id);
+        }
+      }
+    };
+
+    if (jobs.length > 0) {
+      loadEmployers();
+    }
+  }, [jobs]);
+
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,7 +124,6 @@ export default function WorkPage() {
   const handlePostJob = async () => {
     try {
       await postJobs(jobData);
-      await fetchJobs();
       await fetchUser();
       
       (document.getElementById("post-job-modal") as HTMLDialogElement)?.close();
@@ -112,6 +143,29 @@ export default function WorkPage() {
       console.error("Failed to post job:", error);
       alert("Failed to post job. Please try again.");
     }
+  };
+
+  const handleApplyToJob = async () => {
+    if (!selectedJobId) return;
+
+    setIsApplying(true);
+    try {
+      await applyToJob(selectedJobId, coverLetter);
+      alert("Application submitted successfully!");
+      (document.getElementById("apply-job-modal") as HTMLDialogElement)?.close();
+      setCoverLetter("");
+      setSelectedJobId(null);
+    } catch (error: any) {
+      alert(error.response?.data?.error || "Failed to apply to job");
+    } finally {
+      setIsApplying(false);
+    }
+  };
+
+  const openApplyModal = (jobId: string) => {
+    setSelectedJobId(jobId);
+    setCoverLetter("");
+    (document.getElementById("apply-job-modal") as HTMLDialogElement)?.showModal();
   };
 
   const formatSalary = (pay_rate: string, pay_type: string) => {
@@ -137,18 +191,28 @@ export default function WorkPage() {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      IT: "bg-blue-50 text-blue-700 border-blue-200",
-      Construction: "bg-orange-50 text-orange-700 border-orange-200",
-      Healthcare: "bg-green-50 text-green-700 border-green-200",
-      Education: "bg-purple-50 text-purple-700 border-purple-200",
-      Other: "bg-gray-50 text-gray-700 border-gray-200"
+      IT: "bg-blue-50 text-blue-700",
+      Construction: "bg-orange-50 text-orange-700",
+      Healthcare: "bg-green-50 text-green-700",
+      Education: "bg-purple-50 text-purple-700",
+      Other: "bg-gray-50 text-gray-700"
     };
     return colors[category as keyof typeof colors] || colors.Other;
   };
 
-  const handleApplyNow = (jobId: number) => {
-    // Implement apply functionality
-    alert(`Applying for job #${jobId}`);
+  const getEmployerName = (job: any) => {
+    if (job.employer_id && userCache[job.employer_id]) {
+      const employer = userCache[job.employer_id];
+      return `${employer.firstName} ${employer.lastName}`;
+    }
+    return job.employer?.name || "Employer";
+  };
+
+  const getEmployerAvatar = (job: any) => {
+    if (job.employer_id && userCache[job.employer_id]?.avatarUrl) {
+      return userCache[job.employer_id].avatarUrl;
+    }
+    return null;
   };
 
   return (
@@ -158,7 +222,7 @@ export default function WorkPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold  bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Job Board
               </h1>
               <p className="text-gray-600 mt-2 text-lg">Discover your next career opportunity</p>
@@ -178,7 +242,6 @@ export default function WorkPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Search */}
             <div className="md:col-span-2">
               <label className="label">
                 <span className="label-text font-semibold text-gray-700">Search Jobs</span>
@@ -190,12 +253,11 @@ export default function WorkPage() {
                   placeholder="Search by title, description, or requirements..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="input input-bordered w-full pl-12 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="input input-bordered w-full pl-12 pr-4 py-3 rounded-xl"
                 />
               </div>
             </div>
 
-            {/* Category Filter */}
             <div>
               <label className="label">
                 <span className="label-text font-semibold text-gray-700">Category</span>
@@ -212,7 +274,6 @@ export default function WorkPage() {
               </select>
             </div>
 
-            {/* Status Filter */}
             <div>
               <label className="label">
                 <span className="label-text font-semibold text-gray-700">Status</span>
@@ -253,99 +314,102 @@ export default function WorkPage() {
               </div>
             ) : (
               <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {filteredJobs.map((job) => (
-                  <div key={job.id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div className="p-6">
-                      {/* Header */}
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 line-clamp-2 mb-1">
-                            {job.title}
-                          </h3>
-                          
-                          {/* Employer Info */}
-                          <div className="flex items-center text-gray-600 mb-2">
-                            <FiUser className="w-4 h-4 mr-1" />
-                            <span className="text-sm">
-                              {job.employer?.name || "Unknown Employer"}
-                            </span>
-                            {job.employer?.verified && (
+                {filteredJobs.map((job) => {
+                  const employerName = getEmployerName(job);
+                  const employerAvatar = getEmployerAvatar(job);
+
+                  return (
+                    <div key={job.id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                      <div className="p-6">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-gray-900 line-clamp-2 mb-1">
+                              {job.title}
+                            </h3>
+                            
+                            <div className="flex items-center text-gray-600 mb-2">
+                              {employerAvatar ? (
+                                <img 
+                                  src={employerAvatar} 
+                                  alt={employerName}
+                                  className="w-6 h-6 rounded-full mr-2"
+                                />
+                              ) : (
+                                <FiUser className="w-4 h-4 mr-1" />
+                              )}
+                              <span className="text-sm">{employerName}</span>
                               <FiCheck className="w-3 h-3 ml-1 text-green-500" />
-                            )}
+                            </div>
                           </div>
+                          {job.urgent && (
+                            <span className="badge badge-error gap-1 animate-pulse">
+                              <FaFire className="w-3 h-3" />
+                              Urgent
+                            </span>
+                          )}
                         </div>
-                        {job.urgent && (
-                          <span className="badge badge-error gap-1 animate-pulse">
-                            <FaFire className="w-3 h-3" />
-                            Urgent
-                          </span>
-                        )}
-                      </div>
 
-                      {/* Description */}
-                      <p className="text-gray-600 line-clamp-3 mb-4 text-sm">{job.description}</p>
+                        <p className="text-gray-600 line-clamp-3 mb-4 text-sm">{job.description}</p>
 
-                      {/* Requirements */}
-                      {job.requirements.length > 0 && (
-                        <div className="mb-4">
-                          <div className="flex flex-wrap gap-2">
-                            {job.requirements.slice(0, 3).map((req, idx) => (
-                              <span key={idx} className="badge badge-outline badge-sm rounded-lg">
-                                {req}
-                              </span>
-                            ))}
-                            {job.requirements.length > 3 && (
-                              <span className="badge badge-ghost badge-sm rounded-lg">
-                                +{job.requirements.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Details */}
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center text-gray-600">
-                          <FiDollarSign className="w-4 h-4 mr-2 text-green-500" />
-                          <span className="text-sm font-medium">{formatSalary(job.pay_rate, job.pay_type)}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <FiMapPin className="w-4 h-4 mr-2 text-red-500" />
-                          <span className="text-sm">{job.location}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <FaRegBuilding className="w-4 h-4 mr-2 text-blue-500" />
-                          <span className="text-sm">{job.category}</span>
-                        </div>
-                        {job.created_at && (
-                          <div className="flex items-center text-gray-500">
-                            <FiCalendar className="w-4 h-4 mr-2" />
-                            <span className="text-xs">{formatDate(job.created_at)}</span>
+                        {job.requirements.length > 0 && (
+                          <div className="mb-4">
+                            <div className="flex flex-wrap gap-2">
+                              {job.requirements.slice(0, 3).map((req, idx) => (
+                                <span key={idx} className="badge badge-outline badge-sm rounded-lg">
+                                  {req}
+                                </span>
+                              ))}
+                              {job.requirements.length > 3 && (
+                                <span className="badge badge-ghost badge-sm rounded-lg">
+                                  +{job.requirements.length - 3} more
+                                </span>
+                              )}
+                            </div>
                           </div>
                         )}
-                      </div>
 
-                      {/* Footer */}
-                      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
-                        <span className={`badge rounded-full ${getCategoryColor(job.category)}`}>
-                          {job.category}
-                        </span>
-                        <div className="flex items-center gap-3">
-                          <span className={`badge rounded-full ${job.status === 'open' ? 'badge-success' : 'badge-error'}`}>
-                            {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center text-gray-600">
+                            <FiDollarSign className="w-4 h-4 mr-2 text-green-500" />
+                            <span className="text-sm font-medium">{formatSalary(job.pay_rate, job.pay_type)}</span>
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <FiMapPin className="w-4 h-4 mr-2 text-red-500" />
+                            <span className="text-sm">{job.location}</span>
+                          </div>
+                          <div className="flex items-center text-gray-600">
+                            <FiBriefcase className="w-4 h-4 mr-2 text-blue-500" />
+                            <span className="text-sm">{job.category}</span>
+                          </div>
+                          {job.created_at && (
+                            <div className="flex items-center text-gray-500">
+                              <FiCalendar className="w-4 h-4 mr-2" />
+                              <span className="text-xs">{formatDate(job.created_at)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                          <span className={`badge rounded-full ${getCategoryColor(job.category)}`}>
+                            {job.category}
                           </span>
-                          <button 
-                            onClick={() => handleApplyNow(job.id)}
-                            className="btn btn-primary btn-sm rounded-full shadow hover:shadow-md transition-shadow"
-                            disabled={job.status !== 'open'}
-                          >
-                            Apply Now
-                          </button>
+                          <div className="flex items-center gap-3">
+                            <span className={`badge rounded-full ${job.status === 'open' ? 'badge-success' : 'badge-error'}`}>
+                              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                            </span>
+                            <button 
+                              onClick={() => openApplyModal(job.id)}
+                              className="btn btn-primary btn-sm rounded-full shadow hover:shadow-md transition-shadow"
+                              disabled={job.status !== 'open'}
+                            >
+                              Apply Now
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>
@@ -356,7 +420,7 @@ export default function WorkPage() {
       <dialog id="post-job-modal" className="modal">
         <div className="modal-box max-w-4xl rounded-2xl shadow-2xl">
           <form method="dialog">
-            <button className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4 text-gray-400 hover:text-gray-600">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4">
               <FiX className="w-5 h-5" />
             </button>
           </form>
@@ -364,10 +428,8 @@ export default function WorkPage() {
           <h3 className="font-bold text-2xl mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Post a New Job
           </h3>
-          <p className="text-gray-600 mb-6">Fill in the details to post your job opportunity</p>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[70vh] overflow-y-auto pr-2">
-            {/* Left Column */}
             <div className="space-y-4">
               <div className="form-control">
                 <label className="label">
@@ -388,7 +450,7 @@ export default function WorkPage() {
                   <span className="label-text font-semibold">Description *</span>
                 </label>
                 <textarea
-                  placeholder="Describe the job responsibilities and expectations..."
+                  placeholder="Describe the job responsibilities..."
                   value={jobData.description}
                   onChange={(e) => setJobData({ ...jobData, description: e.target.value })}
                   className="textarea textarea-bordered rounded-xl h-32"
@@ -430,7 +492,6 @@ export default function WorkPage() {
               </div>
             </div>
 
-            {/* Right Column */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="form-control">
@@ -452,7 +513,7 @@ export default function WorkPage() {
                   </label>
                   <select
                     value={jobData.pay_type}
-                    onChange={(e) => setJobData({ ...jobData, pay_type: e.target.value })}
+                    onChange={(e) => setJobData({ ...jobData, pay_type: e.target.value as "hourly" | "fixed" })}
                     className="select select-bordered rounded-xl"
                   >
                     <option value="hourly">Hourly</option>
@@ -499,7 +560,7 @@ export default function WorkPage() {
                   </label>
                   <select
                     value={jobData.status}
-                    onChange={(e) => setJobData({ ...jobData, status: e.target.value })}
+                    onChange={(e) => setJobData({ ...jobData, status: e.target.value as "open" | "closed" })}
                     className="select select-bordered rounded-xl"
                   >
                     <option value="open">Open</option>
@@ -514,7 +575,7 @@ export default function WorkPage() {
                       onChange={(e) => setJobData({ ...jobData, urgent: e.target.checked })}
                       className="checkbox checkbox-primary rounded"
                     />
-                    <span className="label-text font-semibold">Mark as Urgent</span>
+                    <span className="label-text font-semibold">Urgent</span>
                   </label>
                 </div>
               </div>
@@ -531,6 +592,61 @@ export default function WorkPage() {
                 disabled={!jobData.title || !jobData.description || !jobData.pay_rate || !jobData.location || !jobData.category}
               >
                 Post Job
+              </button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Apply Job Modal */}
+      <dialog id="apply-job-modal" className="modal">
+        <div className="modal-box max-w-2xl rounded-2xl shadow-2xl">
+          <form method="dialog">
+            <button className="btn btn-sm btn-circle btn-ghost absolute right-4 top-4">
+              <FiX className="w-5 h-5" />
+            </button>
+          </form>
+          
+          <h3 className="font-bold text-2xl mb-2 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+            Apply for Job
+          </h3>
+          <p className="text-gray-600 mb-6">Submit your application for this position</p>
+
+          <div className="space-y-4">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text font-semibold">Cover Letter (Optional)</span>
+              </label>
+              <textarea
+                placeholder="Tell the employer why you're interested in this position..."
+                value={coverLetter}
+                onChange={(e) => setCoverLetter(e.target.value)}
+                className="textarea textarea-bordered rounded-xl h-32"
+                maxLength={1000}
+              />
+              <div className="label">
+                <span className="label-text-alt text-gray-500">{coverLetter.length}/1000 characters</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-action mt-6">
+            <form method="dialog" className="flex gap-3 w-full">
+              <button className="btn btn-ghost rounded-xl flex-1">Cancel</button>
+              <button 
+                type="button" 
+                onClick={handleApplyToJob}
+                disabled={isApplying}
+                className="btn btn-success rounded-xl flex-1 shadow-lg hover:shadow-xl"
+              >
+                {isApplying ? (
+                  <span className="loading loading-spinner"></span>
+                ) : (
+                  <>
+                    <FiSend className="w-4 h-4 mr-2" />
+                    Submit Application
+                  </>
+                )}
               </button>
             </form>
           </div>
