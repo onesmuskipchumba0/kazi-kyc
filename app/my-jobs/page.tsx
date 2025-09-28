@@ -1,93 +1,23 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, Calendar, Star, Briefcase, Clock, DollarSign } from "lucide-react";
+import { ApplicationStore } from "@/lib/my-jobs/JobsStore";
 
 export default function MyJobsPage() {
   const [activeTab, setActiveTab] = useState<"active" | "application" | "completed">("active");
+  const fetchJobs = ApplicationStore((state) => state.fetchJobs);
+  const applications = ApplicationStore((state) => state.applications);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]); // ✅ only run once
 
   // Common jobs data
-  const jobs = [
-    {
-      id: 1,
-      title: "Residential Garden Wall",
-      name: "Mary Wanjiku",
-      rating: 4.8,
-      progress: 65,
-      description:
-        "Building decorative garden wall with natural stones. Project is progressing well and on schedule.",
-      category: "Masonry",
-      location: "Westlands, Nairobi",
-      date: "Started 3 days ago",
-      pay: 3000,
-      status: "active",
-    },
-    {
-      id: 2,
-      title: "Part-time House Cleaning",
-      name: "James Otieno",
-      rating: 4.5,
-      progress: 90,
-      description:
-        "Regular cleaning schedule 3 times per week. Client is very satisfied with the work quality.",
-      category: "House Help",
-      location: "Kilimani, Nairobi",
-      date: "Started 2 weeks ago",
-      pay: 800,
-      status: "active",
-    },
-    {
-      id: 3,
-      title: "Full-time Gardener",
-      name: "Sarah Njeri",
-      rating: 4.7,
-      description:
-        "Looking for a dedicated gardener for daily maintenance of a residential compound.",
-      category: "Gardening",
-      location: "Karen, Nairobi",
-      date: "Applied 5 days ago",
-      pay: 2000,
-      status: "application",
-    },
-    {
-      id: 4,
-      title: "Office Cleaning Services",
-      name: "David Mwangi",
-      rating: 4.6,
-      description:
-        "Pending approval for weekly cleaning of small office block in CBD.",
-      category: "Cleaning",
-      location: "Nairobi CBD",
-      date: "Applied 1 week ago",
-      pay: 1500,
-      status: "application",
-    },
-    {
-      id: 5,
-      title: "Home Painting Project",
-      name: "Peter Kamau",
-      rating: 4.9,
-      description:
-        "Completed full interior painting of a 3-bedroom house with high quality finishes.",
-      category: "Painting",
-      location: "Runda, Nairobi",
-      date: "Completed 1 month ago",
-      pay: 5000,
-      status: "completed",
-    },
-    {
-      id: 6,
-      title: "Fence Repair Work",
-      name: "Lucy Muthoni",
-      rating: 4.8,
-      description:
-        "Successfully repaired and reinforced perimeter fence with metal support.",
-      category: "Construction",
-      location: "Lang'ata, Nairobi",
-      date: "Completed 3 weeks ago",
-      pay: 2500,
-      status: "completed",
-    },
-  ];
+  const jobs = applications.map((job) => ({
+    ...job,
+    // ✅ normalize status so "pending" → "application"
+    status: job.status === "pending" ? "application" : job.status,
+  }));
 
   // Filtered jobs
   const filteredJobs = jobs.filter((job) => job.status === activeTab);
@@ -101,7 +31,10 @@ export default function MyJobsPage() {
 
   // Render job card
   const renderJobCard = (job: any) => (
-    <div key={job.id} className="bg-base-100 p-4 rounded-lg shadow border border-base-200 flex flex-col gap-2">
+    <div
+      key={job.id}
+      className="bg-base-100 p-4 rounded-lg shadow border border-base-200 flex flex-col gap-2"
+    >
       {/* Title and status */}
       <div className="flex justify-between items-center">
         <div>
@@ -112,7 +45,15 @@ export default function MyJobsPage() {
             <span>{job.rating}</span>
           </div>
         </div>
-        <span className={`badge ${job.status === "active" ? "badge-info" : job.status === "application" ? "badge-warning" : "badge-success"}`}>
+        <span
+          className={`badge ${
+            job.status === "active"
+              ? "badge-info"
+              : job.status === "application"
+              ? "badge-warning"
+              : "badge-success"
+          }`}
+        >
           {job.status === "active"
             ? "In Progress"
             : job.status === "application"
@@ -134,7 +75,9 @@ export default function MyJobsPage() {
         </>
       )}
 
-      {job.status !== "active" && <p className="text-sm text-base-content/80">{job.description}</p>}
+      {job.status !== "active" && (
+        <p className="text-sm text-base-content/80">{job.description}</p>
+      )}
 
       {/* Details */}
       <div className="flex gap-2 flex-wrap text-sm text-base-content/70">
@@ -148,12 +91,16 @@ export default function MyJobsPage() {
       </div>
 
       {/* Pay */}
-      <p className="text-success font-semibold">KES {job.pay.toLocaleString()}/daily</p>
+      <p className="text-success font-semibold">
+        KES {job.pay.toLocaleString()}/{job.pay_type}
+      </p>
 
       {/* Actions */}
       <div className="flex gap-2">
         <button className="btn btn-primary btn-sm">Contact</button>
-        {job.status === "active" && <button className="btn btn-outline btn-sm">Update Progress</button>}
+        {job.status === "active" && (
+          <button className="btn btn-outline btn-sm">Update Progress</button>
+        )}
       </div>
     </div>
   );
@@ -161,7 +108,9 @@ export default function MyJobsPage() {
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold">My Jobs</h1>
-      <p className="text-base-content/60 mb-6">Manage your applications, active jobs, and work history</p>
+      <p className="text-base-content/60 mb-6">
+        Manage your applications, active jobs, and work history
+      </p>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

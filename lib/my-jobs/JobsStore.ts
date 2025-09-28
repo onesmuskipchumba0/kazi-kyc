@@ -14,7 +14,8 @@ interface ApplicationDB {
 
 
 interface Employer {
-  name: string;
+  firstName: string;
+  lastName: string;
   avatarUrl?: string;
   rating: number;
   verified: boolean;
@@ -55,6 +56,7 @@ interface Application{
     location: string;
     date:string;
     pay: number;
+    pay_type: string;
     status: "active" | "completed" | "pending" | "cancelled";
 }
 
@@ -78,36 +80,46 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
     const res_user = await axios.get("/api/user");
     const user = res_user.data.user;
 
-    const application_res = await axios.get(`/api/user/applications/${user.id}`);
+    const application_res = await axios.get(`/api/user/applications/${user.public_id}`);
     const applicationsDB: ApplicationDB[] = application_res.data.applications;
+    console.log(applicationsDB);
 
     set({ applications_db: applicationsDB });
 
     const formated_applications: Application[] = await Promise.all(
-      applicationsDB.map(async (app) => {
-        const job_res = await axios.get(`/api/jobs/${app.job_id}`);
-        const job: Job = job_res.data.job;
+  applicationsDB.map(async (app) => {
+    console.log("Processing application:", app.id);
 
-        const employer_res = await axios.get(`/api/user/${job.employer_id}`);
-        const employer: Employer = employer_res.data.user;
+    const job_res = await axios.get(`/api/jobs/${app.job_id}`);
+    const job: Job = job_res.data.job;
+    console.log("Fetched job:", job.id);
 
-        return {
-          id: app.id,
-          title: job.title,
-          name: employer.name,
-          rating: employer.rating,
-          progress: 100,
-          description: job.description,
-          category: job.category,
-          location: job.location,
-          date: job.created_at,
-          pay: parseFloat(job.pay_rate),
-          status: app.status as "active" | "completed" | "pending" | "cancelled",
-        };
-      })
-    );
+    const employer_res = await axios.get(`/api/user/${job.employer_id}`);
+    const employer: Employer = employer_res.data.user;
+    console.log("Fetched employer:", employer);
+
+    return {
+      id: app.id,
+      title: job.title,
+      name: employer.firstName + " " + employer.lastName,
+      rating: employer.rating,
+      progress: 100,
+      pay_type: job.pay_type,
+      description: job.description,
+      category: job.category,
+      location: job.location,
+      date: job.created_at,
+      pay: parseFloat(job.pay_rate),
+      status: app.status as "active" | "completed" | "pending" | "cancelled",
+    };
+  })
+);
+
+console.log("Final formatted applications:", formated_applications);
+
 
     set({ applications: formated_applications });
+    console.log(formated_applications)
   } catch (err) {
     console.log("an error occurred: ", err);
   }
