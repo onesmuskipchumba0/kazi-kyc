@@ -43,8 +43,9 @@ interface Job {
 }
 
 interface ApplicationTypes {
-    application: Application;
-    job: Job;
-    // will send get request to jobs/id
-    fetchJob: () => Promise<void>;
+    applications: Application[];
+    jobs: Job[];
+    // will send get request to jobs/id with worker_id
+    fetchJobs: () => Promise<void>;
+    
 }
