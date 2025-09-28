@@ -11,17 +11,17 @@ export async function GET(
   }
 
   try {
-    const { public_id: public_id } = await params;
+    const { public_id } = params;
 
     const { data, error } = await supabaseAdmin
       .from("user")
-      .select("firstName, lastName, avatarUrl")
+      .select("firstName, lastName, avatarUrl, public_id, rating")
       .eq("public_id", public_id)
       .single();
 
     if (error) {
       console.error("Supabase fetch error:", error);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json({ error: `User ${public_id} not found. ${error.message}` }, { status: 404 });
     }
 
     return NextResponse.json({ user: data }, { status: 200 });
