@@ -2,13 +2,15 @@
 import { useEffect, useState } from "react";
 import { MapPin, Calendar, Star, Briefcase, Clock, DollarSign } from "lucide-react";
 import { ApplicationStore } from "@/lib/my-jobs/JobsStore";
+import axios from "axios";
 
 export default function MyJobsPage() {
   const [activeTab, setActiveTab] = useState<"active" | "application" | "completed">("active");
   const [isLoading, setIsLoading] = useState(true);
   const fetchJobs = ApplicationStore((state) => state.fetchJobs);
   const applications = ApplicationStore((state) => state.applications);
-
+  const [isOpen, setIsOpen] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -23,6 +25,32 @@ export default function MyJobsPage() {
 
     loadData();
   }, [fetchJobs]);
+
+
+// Open modal
+const openDeleteModal = (jobId: string) => {
+  setDeleteJobId(jobId);
+};
+
+// Close modal
+const closeDeleteModal = () => {
+  setDeleteJobId(null);
+};
+
+// Handle delete
+const handleDelete = async () => {
+  if (!deleteJobId) return;
+  try {
+    await axios.delete(`/api/user/applications/${deleteJobId}`);
+    ApplicationStore.setState((state) => ({
+      applications: state.applications.filter((job) => job.id !== deleteJobId),
+    }));
+  } catch (error) {
+    console.error("Failed to delete job:", error);
+  } finally {
+    closeDeleteModal();
+  }
+};
 
   // Show loading screen
   if (isLoading) {
@@ -104,6 +132,7 @@ export default function MyJobsPage() {
     .filter((j) => j.status === "completed")
     .reduce((sum, job) => sum + job.pay, 0);
 
+
   // Render job card
   const renderJobCard = (job: any) => (
     <div
@@ -173,10 +202,36 @@ export default function MyJobsPage() {
       {/* Actions */}
       <div className="flex gap-2">
         <button className="btn btn-primary btn-sm">Contact</button>
+        <button
+        onClick={() =>openDeleteModal(job.id)} 
+        className="btn btn-warning btn-sm">Cancel</button>
         {job.status === "active" && (
           <button className="btn btn-outline btn-sm">Update Progress</button>
         )}
       </div>
+
+      {/*  cancel modal */}
+        {isOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Are you sure?</h3>
+            <p className="py-4">
+              This action cannot be undone. Do you really want to delete this application?
+            </p>
+            <div className="modal-action">
+              <button onClick={handleDelete} className="btn btn-error">
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -249,6 +304,26 @@ export default function MyJobsPage() {
       <div className="flex flex-col gap-4">
         {filteredJobs.map((job) => renderJobCard(job))}
       </div>
+      {/* Cancel modal  */}
+      {deleteJobId && (
+      <div className="modal modal-open">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Are you sure?</h3>
+          <p className="py-4">
+            This action cannot be undone. Do you really want to delete this application?
+          </p>
+          <div className="modal-action">
+            <button onClick={handleDelete} className="btn btn-error">
+              Yes, Delete
+            </button>
+            <button onClick={closeDeleteModal} className="btn">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     </div>
   );
 }
