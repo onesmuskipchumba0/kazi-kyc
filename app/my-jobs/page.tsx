@@ -41,7 +41,7 @@ const closeDeleteModal = () => {
 const handleDelete = async () => {
   if (!deleteJobId) return;
   try {
-    await axios.delete(`/api/user/applications/${deleteJobId}`);
+    await axios.delete(`/api/applications/${deleteJobId}`);
     ApplicationStore.setState((state) => ({
       applications: state.applications.filter((job) => job.id !== deleteJobId),
     }));
