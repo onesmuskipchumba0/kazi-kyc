@@ -41,18 +41,47 @@ export default function MessagesPage() {
   const [messageLoading, setMessageLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
-  // Fetch current user and conversations
+  // Fetch current user and conversations on initial load
   useEffect(() => {
-    fetchCurrentUser();
+    const initializeData = async () => {
+      try {
+        // Fetch current user first
+        const userResponse = await fetch('/api/user');
+        const userData = await userResponse.json();
+        
+        if (userData.user) {
+          setCurrentUser(userData.user);
+          
+          // Then fetch conversations
+          const conversationsResponse = await fetch('/api/conversations');
+          const conversationsData = await conversationsResponse.json();
+          
+          let conversationsArray = [];
+          if (Array.isArray(conversationsData.conversations)) {
+            conversationsArray = conversationsData.conversations;
+          } else if (conversationsData.conversations && typeof conversationsData.conversations === 'object') {
+            conversationsArray = [conversationsData.conversations];
+          } else if (conversationsData.id) {
+            conversationsArray = [conversationsData];
+          }
+          
+          setConversations(conversationsArray);
+          setError(null);
+        } else {
+          setError("Failed to load user data");
+        }
+      } catch (error) {
+        setError('Failed to load data');
+      } finally {
+        setLoading(false);
+        setInitialLoadComplete(true);
+      }
+    };
+
+    initializeData();
   }, []);
-
-  // Fetch conversations when current user is available
-  useEffect(() => {
-    if (currentUser) {
-      fetchConversations();
-    }
-  }, [currentUser]);
 
   // Fetch messages when a chat is selected
   useEffect(() => {
@@ -60,58 +89,6 @@ export default function MessagesPage() {
       fetchMessages(selectedChat.otherUser.public_id);
     }
   }, [selectedChat, currentUser]);
-
-  const fetchCurrentUser = async () => {
-    try {
-      const response = await fetch('/api/user');
-      const data = await response.json();
-      
-      if (data.user) {
-        setCurrentUser(data.user);
-        setError(null);
-      } else {
-        setError("Failed to load user data");
-      }
-    } catch (error) {
-      setError('Failed to load user information');
-    }
-  };
-
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/conversations');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      let conversationsData = [];
-      
-      if (Array.isArray(data.conversations)) {
-        conversationsData = data.conversations;
-      } else if (data.conversations && typeof data.conversations === 'object') {
-        conversationsData = [data.conversations];
-      } else if (data.id) {
-        conversationsData = [data];
-      } else if (Array.isArray(data)) {
-        conversationsData = data;
-      }
-      
-      setConversations(conversationsData);
-      setError(null);
-      
-    } catch (error) {
-      setError('Failed to load conversations');
-      setConversations([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchMessages = async (userId: string) => {
     if (!currentUser || !currentUser.public_id) {
@@ -191,7 +168,14 @@ export default function MessagesPage() {
       if (selectedChat) {
         fetchMessages(selectedChat.otherUser.public_id);
       }
-      fetchConversations();
+      
+      // Update the conversation list with the new message
+      setConversations(prev => prev.map(conv => 
+        conv.otherUser.public_id === receiverId 
+          ? { ...conv, lastMessage: content, timestamp: new Date().toISOString() }
+          : conv
+      ));
+      
       return true;
     } catch (error) {
       return false;
@@ -252,11 +236,8 @@ export default function MessagesPage() {
 
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex justify-center items-center p-8">
-              <div className="loading loading-spinner loading-md"></div>
-              <span className="ml-2 text-sm">Loading conversations...</span>
-            </div>
+          {!initialLoadComplete ? (
+            <ConversationListSkeleton />
           ) : filteredConversations.length === 0 ? (
             <div className="text-center p-8 text-base-content/60 text-sm">
               {conversations.length === 0 ? "No conversations yet" : "No conversations match your search"}
@@ -323,6 +304,46 @@ export default function MessagesPage() {
   );
 }
 
+// Skeleton loader for conversation list
+function ConversationListSkeleton() {
+  return (
+    <div className="space-y-2 p-4">
+      {[...Array(6)].map((_, i) => (
+        <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+          <div className="w-12 h-12 rounded-full bg-base-300"></div>
+          <div className="flex-1 space-y-2">
+            <div className="flex justify-between">
+              <div className="h-4 bg-base-300 rounded w-1/3"></div>
+              <div className="h-3 bg-base-300 rounded w-12"></div>
+            </div>
+            <div className="h-3 bg-base-300 rounded w-2/3"></div>
+            <div className="h-3 bg-base-300 rounded w-1/2"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Skeleton loader for messages
+function MessagesSkeleton() {
+  return (
+    <div className="space-y-4 p-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className={`flex ${i % 2 === 0 ? 'justify-start' : 'justify-end'} animate-pulse`}>
+          <div className={`max-w-[70%] ${i % 2 === 0 ? '' : 'text-right'}`}>
+            <div className={`rounded-2xl px-4 py-3 ${i % 2 === 0 ? 'bg-base-100' : 'bg-neutral'}`}>
+              <div className="h-4 bg-base-300 rounded w-32 mb-1"></div>
+              <div className="h-3 bg-base-300 rounded w-24"></div>
+            </div>
+            <div className={`h-2 bg-base-300 rounded w-16 mt-1 ${i % 2 === 0 ? '' : 'ml-auto'}`}></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Conversation Item Component
 function ConversationItem({ 
   conversation, 
@@ -335,7 +356,7 @@ function ConversationItem({
 }) {
   return (
     <div
-      className={`flex items-center gap-3 p-4 hover:bg-base-200 cursor-pointer ${
+      className={`flex items-center gap-3 p-4 hover:bg-base-200 cursor-pointer transition-colors ${
         isSelected ? "bg-base-200" : ""
       }`}
       onClick={onClick}
@@ -494,7 +515,6 @@ function ChatWindow({
   const [sendingMessages, setSendingMessages] = useState<{id: string, content: string, timestamp: string}[]>([]);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [userInfo, setUserInfo] = useState<User | null>(null);
-  const [loadingUserInfo, setLoadingUserInfo] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -504,7 +524,6 @@ function ChatWindow({
   }, [messages.length, sendingMessages.length]);
 
   const fetchUserInfo = async (publicId: string) => {
-    setLoadingUserInfo(true);
     try {
       const response = await fetch(`/api/user/${publicId}`);
       const data = await response.json();
@@ -514,8 +533,6 @@ function ChatWindow({
       }
     } catch (error) {
       // Silently handle error
-    } finally {
-      setLoadingUserInfo(false);
     }
   };
 
@@ -626,13 +643,8 @@ function ChatWindow({
               className="btn btn-ghost btn-sm" 
               aria-label="Info"
               onClick={handleInfoClick}
-              disabled={loadingUserInfo}
             >
-              {loadingUserInfo ? (
-                <div className="loading loading-spinner loading-xs"></div>
-              ) : (
-                <Info className="w-4 h-4" />
-              )}
+              <Info className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -640,13 +652,12 @@ function ChatWindow({
         {/* Messages */}
         <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-base-200">
           {loading ? (
-            <div className="flex justify-center items-center h-20">
-              <div className="loading loading-spinner loading-md"></div>
-              <span className="ml-2 text-sm">Loading messages...</span>
-            </div>
+            <MessagesSkeleton />
           ) : messages.length === 0 && sendingMessages.length === 0 ? (
             <div className="text-center text-base-content/60 py-8">
-              No messages yet. Start the conversation!
+              <MessageCircle className="w-12 h-12 mx-auto mb-4 text-base-content/30" />
+              <p className="text-lg font-medium mb-2">No messages yet</p>
+              <p className="text-base-content/60">Start the conversation by sending a message!</p>
             </div>
           ) : (
             <>
@@ -659,7 +670,7 @@ function ChatWindow({
                       <div className={`rounded-2xl px-4 py-2 shadow-sm ${isMe ? 'bg-neutral' : 'bg-base-100 border border-base-200'}`}>
                         <div className="break-words">{message.content}</div>
                       </div>
-                      <div className={`flex items-center text-[10px] mt-1 ${isMe ? 'text-base-content/70 justify-end pr-1' : 'text-base-content/50 pl-1'}`}>
+                      <div className={`flex items-center text-[10px] mt-1 ${isMe ? 'text-neutral-content/70 justify-end pr-1' : 'text-base-content/50 pl-1'}`}>
                         <span>{formatMessageTime(message.created_at)}</span>
                         {isMe && <MessageStatus isSent={true} isRead={message.is_read} />}
                       </div>
@@ -722,7 +733,7 @@ function ChatWindow({
   );
 }
 
-// New Chat Form Component
+// New Chat Form Component (keep the same as before)
 function NewChatForm({
   onCreate,
   onCancel,
@@ -829,7 +840,7 @@ function NewChatForm({
               searchResults.map((user) => (
                 <div
                   key={user.public_id}
-                  className={`flex items-center gap-3 p-3 hover:bg-base-200 cursor-pointer ${
+                  className={`flex items-center gap-3 p-3 hover:bg-base-200 cursor-pointer transition-colors ${
                     selectedUser?.public_id === user.public_id ? 'bg-base-200' : ''
                   }`}
                   onClick={() => setSelectedUser(user)}
