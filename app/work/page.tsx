@@ -201,8 +201,8 @@ export default function WorkPage() {
     if (isNaN(rate)) return pay_rate;
     
     return pay_type === "hourly" 
-      ? `$${rate}/hr` 
-      : `$${rate.toLocaleString()}`;
+      ? `KES ${rate}/hr` 
+      : `${rate.toLocaleString()}`;
   };
 
   const formatDate = (dateString: string) => {

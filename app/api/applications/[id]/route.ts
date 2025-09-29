@@ -19,7 +19,9 @@ export async function GET(req: NextRequest, {params}: { params: Promise<{ id: st
     }   catch(err: any){
         return NextResponse.json({ error: err.message}, { status: 500 })
     } 
-}export async function DELETE(
+}
+
+export async function DELETE(
   request: NextRequest,
   {params}: {params: Promise<{id: string}>}
 ){
