@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseClient";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

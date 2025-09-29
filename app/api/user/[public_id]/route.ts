@@ -4,14 +4,14 @@ import { supabaseAdmin } from "@/lib/supabaseClient";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { public_id: string } }
+  { params }: { params: Promise<{ public_id: string }> }
 ) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   try {
-    const { public_id } = params;
+    const { public_id } =await params;
 
     const { data, error } = await supabaseAdmin
       .from("user")

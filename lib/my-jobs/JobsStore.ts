@@ -98,6 +98,11 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
     const employer: Employer = employer_res.data.user;
     console.log("Fetched employer:", employer);
 
+    const formattedDate = new Date(job.created_at).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
     return {
       id: app.id,
       title: job.title,
@@ -108,7 +113,7 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
       description: job.description,
       category: job.category,
       location: job.location,
-      date: job.created_at,
+      date: formattedDate,
       pay: parseFloat(job.pay_rate),
       status: app.status as "active" | "completed" | "pending" | "cancelled",
     };

@@ -3,10 +3,10 @@ import { supabaseAdmin } from "@/lib/supabaseClient";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { public_id: string } }
+  { params }: { params: Promise<{ public_id: string }> }
 ) {
   try {
-    const { public_id } = params;
+    const { public_id } = await params;
 
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
