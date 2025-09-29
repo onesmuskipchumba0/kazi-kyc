@@ -1,21 +1,25 @@
 'use client';
+import { useEffect } from "react";
 import { PlusCircle, TrendingUp } from "lucide-react"
 import WorkPost  from "@/components/WorkPost"
 import PeopleAround from "@/components/PeopleAround"
 import { recentPosts } from "@/app/api/home/homePage"
 import { useUser } from "@clerk/nextjs"
 import { useUsers, useRecentPosts } from "@/lib/homepage/homeStore";
+import PostComponent from "@/components/PostComponent";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
-import { useEffect } from "react";
+
 export default function HomePage() {
   
-  const {user, isLoaded} = useUser();
   const posts = useRecentPosts((state) => state.posts)
   const fetchPosts = useRecentPosts((state) => state.fetchPosts)
+  const { supabaseUser, loading } = useSupabaseUser();
 
+  
   useEffect(()=>{fetchPosts()},[fetchPosts])
 
-  if(!user || !isLoaded || posts.length == 0){
+  if(loading){
     return (
     <div className="flex flex-1 items-center justify-center h-[60vh]">
       <span className="loading loading-spinner loading-lg text-primary"></span>
@@ -27,13 +31,23 @@ export default function HomePage() {
         {/* Header Section */}
         <div className="flex items-center justify-between mb-6 px-2">
           <div>
-            <h1 className="text-2xl font-bold">Welcome back, {user?.firstName}!</h1>
+            <h1 className="text-2xl font-bold">Welcome back, {supabaseUser?.firstName}!</h1>
             <p className="text-base-content/60">Here's what's happening in your network</p>
           </div>
-          <button className="btn btn-primary btn-sm md:btn-md">
-            <PlusCircle className="w-4 h-4" />
-            Share Work
-          </button>
+        {/* Trigger post modal */}
+        { supabaseUser ?
+        <>
+            <label
+              htmlFor="my_post_modal"
+              className="btn btn-primary btn-sm md:btn-md flex items-center gap-2"
+            >
+              <PlusCircle className="w-4 h-4" />
+              Share Work
+            </label>
+            <PostComponent userId={supabaseUser.public_id} modalId="my_post_modal" />
+        </> : <p>No supabaseUser with email found</p>
+        }
+
         </div>
 
         {/* Main Content Grid */}
@@ -54,7 +68,17 @@ export default function HomePage() {
             {/* Work Posts */}
             <div className="space-y-6">
               {posts.map((post) => (
-                <WorkPost key={post.id} {...post} />
+                <WorkPost 
+                  key={post.id}
+                  id={Number(post.id)}
+                  title={post.title}
+                  description={post.description}
+                  imageURL={post.imageURL}
+                  likes={post.likes}
+                  shares={post.shares}
+                  created_at={post.created_at}
+                  author={post.author}
+                />
               ))}
             </div>
 

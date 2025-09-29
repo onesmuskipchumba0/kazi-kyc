@@ -12,10 +12,10 @@ function SignInComponent() {
       <div className="flex-1 flex justify-center items-center  bg-green-200 flex-col pb-12">
         <div className='relative w-[160px] h-[160px] overflow-hidden rounded-full items-center border-blue-500 border-4'>
             <Image 
-            src={"/logo.jpg"}
+            src={"/z.png"}
             fill
             alt='Kazi KYC logo'
-            className='object-cover'
+            className='object-contain'
             priority
             />
         </div>
