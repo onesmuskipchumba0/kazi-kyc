@@ -2,15 +2,118 @@
 import { useEffect, useState } from "react";
 import { MapPin, Calendar, Star, Briefcase, Clock, DollarSign } from "lucide-react";
 import { ApplicationStore } from "@/lib/my-jobs/JobsStore";
+import axios from "axios";
 
 export default function MyJobsPage() {
   const [activeTab, setActiveTab] = useState<"active" | "application" | "completed">("active");
+  const [isLoading, setIsLoading] = useState(true);
   const fetchJobs = ApplicationStore((state) => state.fetchJobs);
   const applications = ApplicationStore((state) => state.applications);
-
+  const [isOpen, setIsOpen] = useState(false);
+  const [deleteJobId, setDeleteJobId] = useState<string | null>(null);
   useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]); // ✅ only run once
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        await fetchJobs();
+      } catch (error) {
+        console.error("Failed to fetch jobs:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [fetchJobs]);
+
+
+// Open modal
+const openDeleteModal = (jobId: string) => {
+  setDeleteJobId(jobId);
+};
+
+// Close modal
+const closeDeleteModal = () => {
+  setDeleteJobId(null);
+};
+
+// Handle delete
+const handleDelete = async () => {
+  if (!deleteJobId) return;
+  try {
+    await axios.delete(`/api/applications/${deleteJobId}`);
+    ApplicationStore.setState((state) => ({
+      applications: state.applications.filter((job) => job.id !== deleteJobId),
+    }));
+  } catch (error) {
+    console.error("Failed to delete job:", error);
+  } finally {
+    closeDeleteModal();
+  }
+};
+
+  // Show loading screen
+  if (isLoading) {
+    return (
+      <div className="p-4 md:p-6 max-w-5xl mx-auto">
+        <h1 className="text-2xl font-bold">My Jobs</h1>
+        <p className="text-base-content/60 mb-6">
+          Manage your applications, active jobs, and work history
+        </p>
+        
+        {/* Loading skeleton */}
+        <div className="space-y-6">
+          {/* Summary Cards Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-base-100 rounded-lg p-4 shadow border border-base-200 flex items-center gap-4">
+                <div className="bg-base-300 p-3 rounded-full animate-pulse">
+                  <div className="w-6 h-6"></div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-6 w-12 bg-base-300 rounded animate-pulse"></div>
+                  <div className="h-4 w-24 bg-base-300 rounded animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs Skeleton */}
+          <div className="flex gap-4 mb-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-10 w-32 bg-base-300 rounded animate-pulse"></div>
+            ))}
+          </div>
+
+          {/* Job Cards Skeleton */}
+          <div className="flex flex-col gap-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-base-100 p-4 rounded-lg shadow border border-base-200 space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-2">
+                    <div className="h-5 w-48 bg-base-300 rounded animate-pulse"></div>
+                    <div className="h-4 w-32 bg-base-300 rounded animate-pulse"></div>
+                  </div>
+                  <div className="h-6 w-20 bg-base-300 rounded animate-pulse"></div>
+                </div>
+                <div className="h-4 w-full bg-base-300 rounded animate-pulse"></div>
+                <div className="h-4 w-3/4 bg-base-300 rounded animate-pulse"></div>
+                <div className="flex gap-2">
+                  <div className="h-6 w-16 bg-base-300 rounded animate-pulse"></div>
+                  <div className="h-6 w-24 bg-base-300 rounded animate-pulse"></div>
+                </div>
+                <div className="h-5 w-28 bg-base-300 rounded animate-pulse"></div>
+                <div className="flex gap-2">
+                  <div className="h-8 w-20 bg-base-300 rounded animate-pulse"></div>
+                  <div className="h-8 w-28 bg-base-300 rounded animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Common jobs data
   const jobs = applications.map((job) => ({
@@ -28,6 +131,7 @@ export default function MyJobsPage() {
   const totalEarnings = jobs
     .filter((j) => j.status === "completed")
     .reduce((sum, job) => sum + job.pay, 0);
+
 
   // Render job card
   const renderJobCard = (job: any) => (
@@ -98,10 +202,36 @@ export default function MyJobsPage() {
       {/* Actions */}
       <div className="flex gap-2">
         <button className="btn btn-primary btn-sm">Contact</button>
+        <button
+        onClick={() =>openDeleteModal(job.id)} 
+        className="btn btn-warning btn-sm">Cancel</button>
         {job.status === "active" && (
           <button className="btn btn-outline btn-sm">Update Progress</button>
         )}
       </div>
+
+      {/*  cancel modal */}
+        {isOpen && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <h3 className="font-bold text-lg">Are you sure?</h3>
+            <p className="py-4">
+              This action cannot be undone. Do you really want to delete this application?
+            </p>
+            <div className="modal-action">
+              <button onClick={handleDelete} className="btn btn-error">
+                Yes, Delete
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="btn"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -174,6 +304,26 @@ export default function MyJobsPage() {
       <div className="flex flex-col gap-4">
         {filteredJobs.map((job) => renderJobCard(job))}
       </div>
+      {/* Cancel modal  */}
+      {deleteJobId && (
+      <div className="modal modal-open">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Are you sure?</h3>
+          <p className="py-4">
+            This action cannot be undone. Do you really want to delete this application?
+          </p>
+          <div className="modal-action">
+            <button onClick={handleDelete} className="btn btn-error">
+              Yes, Delete
+            </button>
+            <button onClick={closeDeleteModal} className="btn">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     </div>
   );
 }
