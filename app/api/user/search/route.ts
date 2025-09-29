@@ -4,25 +4,25 @@ import { supabaseAdmin } from "@/lib/supabaseClient";
 
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get('q');
+
+    if (!query) {
+      return NextResponse.json({ users: [] });
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
     }
 
-    const searchQuery = req.nextUrl.searchParams.get('q');
-
-    if (!searchQuery || searchQuery.trim() === '') {
-      return NextResponse.json({ users: [] }, { status: 200 });
-    }
-
-    // Search users by email or phone number
+    // Search by email or phone number
     const { data: users, error } = await supabaseAdmin
       .from("user")
       .select("public_id, name, email, phoneNumber, avatarUrl, location")
-      .or(`email.ilike.%${searchQuery}%,phoneNumber.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
+      .or(`email.ilike.%${query}%,phoneNumber.ilike.%${query}%`)
       .limit(10);
 
     if (error) {
-      console.error('Search error:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
