@@ -40,15 +40,21 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const [messageLoading, setMessageLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch current user and conversations
   useEffect(() => {
+    console.log("🔍 MessagesPage: Component mounted, fetching current user");
     fetchCurrentUser();
   }, []);
 
   // Fetch conversations when current user is available
   useEffect(() => {
     if (currentUser) {
+      console.log("🔍 MessagesPage: Current user available, fetching conversations", {
+        currentUserId: currentUser.public_id,
+        currentUserName: currentUser.name
+      });
       fetchConversations();
     }
   }, [currentUser]);
@@ -56,47 +62,143 @@ export default function MessagesPage() {
   // Fetch messages when a chat is selected
   useEffect(() => {
     if (selectedChat && currentUser) {
+      console.log("🔍 MessagesPage: Chat selected, fetching messages", {
+        selectedChatId: selectedChat.id,
+        otherUserId: selectedChat.otherUser.public_id,
+        otherUserName: selectedChat.otherUser.name
+      });
       fetchMessages(selectedChat.otherUser.public_id);
     }
   }, [selectedChat, currentUser]);
 
   const fetchCurrentUser = async () => {
     try {
+      console.log("🔍 MessagesPage: Starting fetchCurrentUser");
       const response = await fetch('/api/user');
+      console.log("🔍 MessagesPage: User API response status:", response.status);
+      
       const data = await response.json();
+      console.log("🔍 MessagesPage: User API response data:", data);
+      
       if (data.user) {
+        console.log("✅ MessagesPage: Current user fetched successfully", {
+          id: data.user.public_id,
+          name: data.user.name,
+          email: data.user.email
+        });
         setCurrentUser(data.user);
+        setError(null);
+      } else {
+        console.error("❌ MessagesPage: No user data in response");
+        setError("Failed to load user data");
       }
     } catch (error) {
-      console.error('Error fetching current user:', error);
+      console.error('❌ MessagesPage: Error fetching current user:', error);
+      setError('Failed to load user information');
     }
   };
 
-  const fetchConversations = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/conversations');
-      const data = await response.json();
-      setConversations(data.conversations || []);
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setLoading(false);
+  // Update the fetchConversations function in your MessagesPage component
+const fetchConversations = async () => {
+  try {
+    console.log("🔍 MessagesPage: Starting fetchConversations");
+    setLoading(true);
+    setError(null);
+    
+    const response = await fetch('/api/conversations');
+    console.log("🔍 MessagesPage: Conversations API response status:", response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    
+    const data = await response.json();
+    console.log("🔍 MessagesPage: Conversations API response data:", data);
+    
+    // Handle both array and single object responses
+    let conversationsData = [];
+    
+    if (Array.isArray(data.conversations)) {
+      // If it's already an array
+      conversationsData = data.conversations;
+    } else if (data.conversations && typeof data.conversations === 'object') {
+      // If it's a single conversation object, wrap it in an array
+      conversationsData = [data.conversations];
+    } else if (data.id) {
+      // If the response itself is a conversation object
+      conversationsData = [data];
+    } else if (Array.isArray(data)) {
+      // If the response is directly an array
+      conversationsData = data;
+    }
+    
+    console.log(`✅ MessagesPage: Processed ${conversationsData.length} conversations`, conversationsData);
+    setConversations(conversationsData);
+    setError(null);
+    
+  } catch (error) {
+    console.error('❌ MessagesPage: Error fetching conversations:', error);
+    setError('Failed to load conversations');
+    setConversations([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const fetchMessages = async (userId: string) => {
-    try {
-      setMessageLoading(true);
-      const response = await fetch(`/api/messages/${userId}`);
-      const data = await response.json();
+  // Update the fetchMessages function in your MessagesPage component
+// Update the fetchMessages function to log the actual error response
+// Update the fetchMessages function to add more debugging
+const fetchMessages = async (userId: string) => {
+  // Add a check to ensure currentUser is available
+  if (!currentUser || !currentUser.public_id) {
+    console.error("❌ MessagesPage: Cannot fetch messages - current user not available", {
+      currentUser,
+      hasPublicId: currentUser?.public_id
+    });
+    setError("User not authenticated");
+    return;
+  }
+
+  try {
+    console.log("🔍 MessagesPage: Starting fetchMessages for user:", userId, "current user:", currentUser.public_id);
+    console.log("🔍 MessagesPage: Making API call to:", `/api/messages/${userId}`);
+    console.log("🔍 MessagesPage: User ID being sent:", userId, "Type:", typeof userId);
+    
+    setMessageLoading(true);
+    setError(null);
+    
+    const response = await fetch(`/api/messages/${userId}`);
+    console.log("🔍 MessagesPage: Messages API response status:", response.status);
+    
+    if (!response.ok) {
+      // Get the error response body to see what's wrong
+      const errorData = await response.json();
+      console.error("❌ MessagesPage: API error response:", errorData);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error}`);
+    }
+    
+    const data = await response.json();
+    console.log("🔍 MessagesPage: Messages API response data:", data);
+    
+    if (data.messages) {
+      console.log(`✅ MessagesPage: Fetched ${data.messages.length} messages`);
       setMessages(data.messages || []);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setMessageLoading(false);
+      setError(null);
+    } else if (data.error) {
+      console.error("❌ MessagesPage: API returned error:", data.error);
+      setError(data.error);
+    } else {
+      console.warn("⚠️ MessagesPage: No messages array in response");
+      setMessages([]);
     }
-  };
+  } catch (error) {
+    console.error('❌ MessagesPage: Error fetching messages:', error);
+    setError('Failed to load messages');
+    setMessages([]);
+  } finally {
+    setMessageLoading(false);
+  }
+};
 
   const filteredConversations = conversations.filter((c) =>
     c.otherUser.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -104,6 +206,7 @@ export default function MessagesPage() {
   );
 
   const handleNewChat = (user: User) => {
+    console.log("🔍 MessagesPage: Creating new chat with user:", user);
     const newConversation: Conversation = {
       id: `new-${Date.now()}`,
       otherUser: user,
@@ -116,38 +219,52 @@ export default function MessagesPage() {
     setShowNewChat(false);
   };
 
-const handleSendMessage = async (content: string, receiverId: string) => {
-  if (!currentUser) return false;
-
-  try {
-    const response = await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sender_id: currentUser.public_id,
-        receiver_id: receiverId,
-        content,
-      }),
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      console.error("Send message failed:", result);
+  const handleSendMessage = async (content: string, receiverId: string) => {
+    if (!currentUser) {
+      console.error("❌ MessagesPage: Cannot send message - no current user");
       return false;
     }
 
-    if (selectedChat) {
-      fetchMessages(selectedChat.otherUser.public_id);
+    try {
+      console.log("🔍 MessagesPage: Sending message", {
+        content,
+        receiverId,
+        senderId: currentUser.public_id
+      });
+
+      const response = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sender_id: currentUser.public_id,
+          receiver_id: receiverId,
+          content,
+        }),
+      });
+
+      console.log("🔍 MessagesPage: Send message response status:", response.status);
+      
+      const result = await response.json();
+      console.log("🔍 MessagesPage: Send message response data:", result);
+      
+      if (!response.ok) {
+        console.error("❌ MessagesPage: Send message failed:", result);
+        return false;
+      }
+
+      console.log("✅ MessagesPage: Message sent successfully");
+      
+      // Refresh messages and conversations
+      if (selectedChat) {
+        fetchMessages(selectedChat.otherUser.public_id);
+      }
+      fetchConversations();
+      return true;
+    } catch (error) {
+      console.error("❌ MessagesPage: Error sending message:", error);
+      return false;
     }
-    fetchConversations();
-    return true;
-  } catch (error) {
-    console.error("Error sending message:", error);
-    return false;
-  }
-};
-
-
+  };
 
   return (
     <div className="flex h-[calc(100vh-4rem)] lg:h-[calc(100vh-2rem)]">
@@ -159,6 +276,7 @@ const handleSendMessage = async (content: string, receiverId: string) => {
           <button
             className="btn btn-primary btn-sm"
             onClick={() => {
+              console.log("🔍 MessagesPage: New chat button clicked");
               setSelectedChat(null);
               setShowNewChat(true);
             }}
@@ -181,25 +299,41 @@ const handleSendMessage = async (content: string, receiverId: string) => {
           </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mx-4 my-2 p-2 bg-error/10 border border-error/20 rounded text-error text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center items-center p-8">
               <div className="loading loading-spinner loading-md"></div>
+              <span className="ml-2 text-sm">Loading conversations...</span>
             </div>
           ) : filteredConversations.length === 0 ? (
             <div className="text-center p-8 text-base-content/60 text-sm">
-              No conversations found
+              {conversations.length === 0 ? "No conversations yet" : "No conversations match your search"}
             </div>
           ) : (
-            filteredConversations.map((conversation) => (
-              <ConversationItem
-                key={conversation.id}
-                conversation={conversation}
-                isSelected={selectedChat?.id === conversation.id}
-                onClick={() => setSelectedChat(conversation)}
-              />
-            ))
+            <>
+              <div className="text-xs text-base-content/50 px-4 py-2">
+                {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}
+              </div>
+              {filteredConversations.map((conversation) => (
+                <ConversationItem
+                  key={conversation.id}
+                  conversation={conversation}
+                  isSelected={selectedChat?.id === conversation.id}
+                  onClick={() => {
+                    console.log("🔍 MessagesPage: Conversation clicked:", conversation);
+                    setSelectedChat(conversation);
+                  }}
+                />
+              ))}
+            </>
           )}
         </div>
       </div>
@@ -229,7 +363,7 @@ const handleSendMessage = async (content: string, receiverId: string) => {
   );
 }
 
-// Conversation Item Component
+// Conversation Item Component (unchanged)
 function ConversationItem({ 
   conversation, 
   isSelected, 
@@ -285,7 +419,7 @@ function ConversationItem({
   );
 }
 
-// Empty State Component
+// Empty State Component (unchanged)
 function EmptyState({ onNew }: { onNew: () => void }) {
   return (
     <div className="flex flex-1 flex-col">
@@ -321,7 +455,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
   );
 }
 
-// Chat Window Component
+// Chat Window Component (unchanged)
 function ChatWindow({ 
   chat, 
   messages, 
@@ -399,6 +533,7 @@ function ChatWindow({
         {loading ? (
           <div className="flex justify-center items-center h-20">
             <div className="loading loading-spinner loading-md"></div>
+            <span className="ml-2 text-sm">Loading messages...</span>
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center text-base-content/60 py-8">
@@ -443,7 +578,7 @@ function ChatWindow({
   );
 }
 
-// New Chat Form Component
+// New Chat Form Component (unchanged)
 function NewChatForm({
   onCreate,
   onCancel,
@@ -464,10 +599,15 @@ function NewChatForm({
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/user/search?q=${encodeURIComponent(query)}`);
+      console.log("🔍 NewChatForm: Searching users with query:", query);
+      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`);
+      console.log("🔍 NewChatForm: Search API response status:", response.status);
+      
       const data = await response.json();
+      console.log("🔍 NewChatForm: Search API response data:", data);
       
       if (data.users) {
+        console.log(`✅ NewChatForm: Found ${data.users.length} users`);
         // Fetch detailed user information including avatarUrl for each user
         const detailedUsers = await Promise.all(
           data.users.map(async (user: any) => {
@@ -483,10 +623,11 @@ function NewChatForm({
         );
         setSearchResults(detailedUsers);
       } else {
+        console.warn("⚠️ NewChatForm: No users array in response");
         setSearchResults([]);
       }
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error('❌ NewChatForm: Error searching users:', error);
       setSearchResults([]);
     } finally {
       setLoading(false);
@@ -503,6 +644,7 @@ function NewChatForm({
 
   const handleCreateChat = () => {
     if (selectedUser) {
+      console.log("🔍 NewChatForm: Creating chat with selected user:", selectedUser);
       onCreate(selectedUser);
     }
   };
@@ -543,6 +685,7 @@ function NewChatForm({
             {loading ? (
               <div className="flex justify-center items-center p-4">
                 <div className="loading loading-spinner loading-sm"></div>
+                <span className="ml-2 text-sm">Searching...</span>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="text-center p-4 text-base-content/60 text-sm">

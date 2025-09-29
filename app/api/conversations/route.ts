@@ -8,9 +8,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
     }
 
-    // Get current user from session (you'll need to implement this based on your auth)
-    // For now, assuming you have a way to get current user ID from cookies/session
-    // You might need to use getServerSession or similar
+    // Get current user from session
     const authHeader = req.headers.get('authorization');
     const cookieHeader = req.headers.get('cookie');
     
@@ -45,6 +43,7 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.error("Error fetching messages:", error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -70,6 +69,7 @@ export async function GET(req: NextRequest) {
       .in("public_id", Array.from(userIds));
 
     if (usersError) {
+      console.error("Error fetching users:", usersError);
       return NextResponse.json({ error: usersError.message }, { status: 500 });
     }
 
@@ -83,37 +83,48 @@ export async function GET(req: NextRequest) {
     const conversationMap = new Map();
     
     messages?.forEach((message: any) => {
-  const otherUserId = message.sender_id === currentUserId
-    ? message.receiver_id
-    : message.sender_id;
+      const otherUserId = message.sender_id === currentUserId
+        ? message.receiver_id
+        : message.sender_id;
 
-  const otherUser = userMap.get(otherUserId);
+      const otherUser = userMap.get(otherUserId);
 
-  if (!otherUser) return; // Skip if user not found
+      if (!otherUser) {
+        console.warn(`User not found for ID: ${otherUserId}`);
+        return; // Skip if user not found
+      }
 
-  if (!conversationMap.has(otherUserId)) {
-    const isUnread = message.receiver_id === currentUserId && !message.is_read;
+      const existingConversation = conversationMap.get(otherUserId);
+      
+      if (!existingConversation) {
+        const isUnread = message.receiver_id === currentUserId && !message.is_read;
 
-    conversationMap.set(otherUserId, {
-      id: otherUserId,
-      otherUser,
-      lastMessage: message.content,
-      timestamp: message.created_at,
-      unreadCount: isUnread ? 1 : 0,
+        conversationMap.set(otherUserId, {
+          id: otherUserId,
+          otherUser,
+          lastMessage: message.content,
+          timestamp: message.created_at,
+          unreadCount: isUnread ? 1 : 0,
+        });
+      } else {
+        // Update unread count if message is unread and this is the first time we see it
+        // (since messages are sorted by date, we only count unread for the latest messages)
+        if (message.receiver_id === currentUserId && !message.is_read) {
+          existingConversation.unreadCount += 1;
+        }
+      }
     });
-  } else {
-    // Update unread count if message is unread
-    const conversation = conversationMap.get(otherUserId);
-    if (message.receiver_id === currentUserId && !message.is_read) {
-      conversation.unreadCount += 1;
-    }
-  }
-});
-
 
     const formattedConversations = Array.from(conversationMap.values());
-
-    return NextResponse.json({ conversations: formattedConversations });
+    
+    console.log(`API: Returning ${formattedConversations.length} conversations`);
+    
+    // Make sure we return an array in the conversations field
+    return NextResponse.json({ 
+      conversations: formattedConversations,
+      count: formattedConversations.length 
+    });
+    
   } catch (error) {
     console.error('Error fetching conversations:', error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

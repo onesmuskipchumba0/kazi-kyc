@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabaseClient";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { user_id: string } }
 ) {
   try {
     if (!supabaseAdmin) {
@@ -26,10 +26,10 @@ export async function GET(
     if (!userData.user) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
     }
-
     const currentUserId = userData.user.public_id;
-    const otherUserId = params.id;
+    const otherUserId = params.user_id;
 
+    if(!otherUserId) return NextResponse.json({ error: `No other user id found`}, { status: 404});
     // Fetch all messages between current user and otherUserId
     const { data: messages, error } = await supabaseAdmin
       .from("messages")
@@ -38,7 +38,7 @@ export async function GET(
         id,
         content,
         created_at,
-        read,
+        is_read,
         sender:user!sender_id ( public_id, name, email, phoneNumber, avatarUrl, location ),
         receiver:user!receiver_id ( public_id, name, email, phoneNumber, avatarUrl, location )
       `
@@ -49,7 +49,7 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: `${error.message} ${error.hint}` }, { status: 500 });
     }
 
     return NextResponse.json({ messages: messages || [] });

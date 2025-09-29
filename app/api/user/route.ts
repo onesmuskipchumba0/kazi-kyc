@@ -1,34 +1,38 @@
-// app/api/users/search/route.ts
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabaseClient";
+import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabaseClient"; // admin client (service role key)
+import { currentUser } from "@clerk/nextjs/server";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
+    const user = await currentUser();
+
+    if (!user?.primaryEmailAddress?.emailAddress) {
+      return NextResponse.json({ error: "No email found" }, { status: 400 });
+    }
+
+    const email = user.primaryEmailAddress.emailAddress;
     if (!supabaseAdmin) {
-      return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
+      console.error("Supabase admin client is not initialized.");
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
 
-    const searchQuery = req.nextUrl.searchParams.get('q');
+    console.log("Clerk email:", email);
 
-    if (!searchQuery || searchQuery.trim() === '') {
-      return NextResponse.json({ users: [] }, { status: 200 });
-    }
-
-    // Search users by email or phone number
-    const { data: users, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("user")
-      .select("public_id, name, email, phoneNumber, avatarUrl, location")
-      .or(`email.ilike.%${searchQuery}%,phoneNumber.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
-      .limit(10);
+      .select("public_id, name, email, firstName, lastName, phoneNumber, profileType, location")
+      .eq("email", email)
+      .single(); // force exactly one row
 
     if (error) {
-      console.error('Search error:', error);
+      console.error("Supabase query error:", error.message);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ users: users || [] });
-  } catch (error) {
-    console.error('Error searching users:', error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    // gets user data
+    return NextResponse.json({ user: data }, { status: 200 });
+  } catch (error: any) {
+    console.error("Route error:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
