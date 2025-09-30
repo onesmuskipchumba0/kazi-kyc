@@ -25,25 +25,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
     let data: any[] = [];
 
-    if (type === 'connections') {
-      console.log('Fetching connections for user:', userId);
-      // Get accepted connections
-      const { data: connections, error } = await supabaseAdmin
-        .from('networks')
-        .select('target_user_id')
-        .eq('user_id', userId)
-        .eq('status', 'accepted');
+    if (type === 'connections' || type === 'network') {
+  console.log('Fetching connections for user:', userId);
 
-      console.log('Connections query result:', { connections, error });
-      
-      if (error) {
-        console.error('Error fetching connections:', error);
-        throw error;
-      }
-      data = connections || [];
-      console.log('Found connections:', data.length);
+  const { data: connections, error } = await supabaseAdmin
+    .from('networks')
+    .select('*')
+    .eq('status', 'accepted')
+    .or(`user_id.eq.${userId},target_user_id.eq.${userId}`);
 
-    } else if (type === 'requests') {
+  console.log('Connections query result:', { connections, error });
+
+  if (error) {
+    console.error('Error fetching connections:', error);
+    throw error;
+  }
+
+  data = connections || [];
+  console.log('Found connections:', data.length);
+} else if (type === 'requests') {
       console.log('Fetching requests for user:', userId);
       // Get pending requests where current user is the target
       const { data: requests, error } = await supabaseAdmin
