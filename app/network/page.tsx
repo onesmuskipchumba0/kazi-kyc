@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { MoreVertical, MapPin, Star, Search } from "lucide-react";
 import { FaPlus, FaUserPlus } from "react-icons/fa";
 import { FaMessage, FaX } from "react-icons/fa6";
-import { useRouter } from "next/navigation"; // Add this import
+import { useRouter } from "next/navigation";
 
 const TABS = ["My Network", "Requests", "Discover People"] as const;
 type Tab = (typeof TABS)[number];
@@ -31,7 +31,7 @@ interface CurrentUser {
 }
 
 export default function NetworkPage() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("My Network");
   const [query, setQuery] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
@@ -84,10 +84,6 @@ export default function NetworkPage() {
           fetch(`/api/network?type=discover&userId=${userId}`),
         ]);
 
-      if (networkResponse.ok) {
-        const networkData = await networkResponse.json();
-        setNetworkCount(Array.isArray(networkData) ? networkData.length : 0);
-      }
 
       if (requestsResponse.ok) {
         const requestsData = await requestsResponse.json();
@@ -103,76 +99,153 @@ export default function NetworkPage() {
     }
   };
 
-  const fetchNetworkData = async () => {
-    try {
-      setLoading(true);
-      const type = getApiType(activeTab);
-      const userId = currentUser?.user.public_id;
+ const fetchNetworkData = async () => {
+  try {
+    setLoading(true);
+    const type = getApiType(activeTab);
+    const userId = currentUser?.user.public_id;
 
-      let response;
-      if (query && activeTab === "Discover People") {
-        response = await fetch(
-          `/api/user/search?q=${encodeURIComponent(query)}`
-        );
-      } else {
-        response = await fetch(`/api/network?type=${type}&userId=${userId}`);
-      }
+    let response;
+    if (query && activeTab === "Discover People") {
+      response = await fetch(
+        `/api/user/search?q=${encodeURIComponent(query)}`
+      );
+    } else {
+      response = await fetch(`/api/network?type=${type}&userId=${userId}`);
+    }
 
-      if (!response.ok) throw new Error("Failed to fetch network data");
+    if (!response.ok) throw new Error("Failed to fetch network data");
 
-      const data = await response.json();
-      console.log("📦 Raw network data from API:", data);
+    const data = await response.json();
+    console.log("📦 Raw network data from API:", data);
 
-      let usersArray: Person[] = [];
+    let usersArray: Person[] = [];
 
-      if (Array.isArray(data)) {
+    if (Array.isArray(data)) {
+      if (activeTab === "Discover People") {
+        // For discover tab, use the data directly as it's already in the correct format
+        usersArray = data.map((user) => ({
+          public_id: user.public_id,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          location: user.location,
+          coreSkills: user.coreSkills,
+          experience: user.experience,
+        }));
+      } else if (activeTab === "Requests") {
+        // For requests tab, fetch user details for the user who sent the request
         usersArray = await Promise.all(
-          data.map(async (u) => {
-            const res = await fetch(`/api/user/${u.user_id}`);
+          data.map(async (request) => {
+            const res = await fetch(`/api/user/${request.user_id}`);
             let userDetails: any = {};
             if (res.ok) {
               userDetails = await res.json();
             }
 
             return {
-              public_id: u.user_id,
+              public_id: request.user_id,
               name: userDetails.user.name || "Unknown User",
               avatarUrl: userDetails.user.avatarUrl || null,
               location: userDetails.user.location || null,
               coreSkills: userDetails.user.coreSkills || [],
               experience: userDetails.user.experience || null,
-              requestId: u.id || undefined,
+              requestId: request.id || undefined,
             } as Person;
           })
         );
+      } else {
+        // For network tab, get the OTHER user (not the current user) and remove duplicates
+        const uniqueUserIds = new Set();
+        const userPromises: Promise<Person>[] = [];
+        
+        data.forEach((connection) => {
+          // Determine which user is the other user (not the current user)
+          const otherUserId = 
+            connection.user_id === userId 
+              ? connection.target_user_id 
+              : connection.user_id;
+          
+          // Skip if we've already processed this user
+          if (uniqueUserIds.has(otherUserId)) {
+            return;
+          }
+          uniqueUserIds.add(otherUserId);
+          
+          // Create promise for fetching user details
+          const userPromise = fetch(`/api/user/${otherUserId}`)
+            .then(async (res) => {
+              let userDetails: any = {};
+              if (res.ok) {
+                userDetails = await res.json();
+              }
+
+              return {
+                public_id: otherUserId,
+                name: userDetails.user?.name || "Unknown User",
+                avatarUrl: userDetails.user?.avatarUrl || null,
+                location: userDetails.user?.location || null,
+                coreSkills: userDetails.user?.coreSkills || [],
+                experience: userDetails.user?.experience || null,
+              } as Person;
+            })
+            .catch(() => ({
+              public_id: otherUserId,
+              name: "Unknown User",
+              avatarUrl: null,
+              location: null,
+              coreSkills: [],
+              experience: null,
+            } as Person));
+            
+          userPromises.push(userPromise);
+        });
+        
+        usersArray = await Promise.all(userPromises);
       }
-
-      console.log("✅ Parsed usersArray:", usersArray);
-
-      setPeople(usersArray);
-
-      if (!query) {
-        const count = usersArray.length;
-        switch (activeTab) {
-          case "My Network":
-            setNetworkCount(count);
-            break;
-          case "Requests":
-            setRequestsCount(count);
-            break;
-          case "Discover People":
-            setDiscoverCount(count);
-            break;
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching network data:", error);
-      setPeople([]);
-    } finally {
-      setLoading(false);
     }
-  };
 
+    console.log("✅ Parsed usersArray:", usersArray);
+
+    setPeople(usersArray);
+
+    // FIXED: Always use the actual usersArray length for counts, not the raw data length
+    if (!query) {
+      const count = usersArray.length; // This reflects the actual number of displayed users
+      console.log(`Setting ${activeTab} count to:`, count);
+      switch (activeTab) {
+        case "My Network":
+          setNetworkCount(count);
+          break;
+        case "Requests":
+          setRequestsCount(count);
+          break;
+        case "Discover People":
+          setDiscoverCount(count);
+          break;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching network data:", error);
+    setPeople([]);
+    
+    // Also reset counts on error
+    if (!query) {
+      switch (activeTab) {
+        case "My Network":
+          setNetworkCount(0);
+          break;
+        case "Requests":
+          setRequestsCount(0);
+          break;
+        case "Discover People":
+          setDiscoverCount(0);
+          break;
+      }
+    }
+  } finally {
+    setLoading(false);
+  }
+};
   const getApiType = (tab: Tab): string => {
     switch (tab) {
       case "My Network":
@@ -186,9 +259,7 @@ export default function NetworkPage() {
     }
   };
 
-  // Add this function to handle messaging
   const handleMessage = (targetUserId: string) => {
-    // Navigate to messages page with the target user ID
     router.push(`/messages?user=${targetUserId}`);
   };
 
