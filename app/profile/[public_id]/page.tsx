@@ -1,4 +1,5 @@
-import PublicProfilePage from "@/components/profile/PublicProfilePage";
+"use client";
+import PublicProfilePage from "../../../components/profile/PublicProfilePage";
 
 interface PageProps {
   params: {

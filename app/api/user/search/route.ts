@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     // Search by email or phone number
     const { data: users, error } = await supabaseAdmin
       .from("user")
-      .select("public_id, name, email, firstName, lastName, phoneNumber, profileType, location, experience")
+      .select("public_id, name, email, firstName, lastName, phoneNumber, profileType, location, experience, connections")
       .or(`email.ilike.%${query}%,phoneNumber.ilike.%${query}%`)
       .limit(10);
 

@@ -7,6 +7,7 @@ import PortfolioTab from './portfolioTab';
 import ReviewsTab from './ReviewsTab';
 import SkillsTab from './SkillsTab';
 import SettingsTab from './SettingsTab';
+import MyJobs from './MyJobs';
 import { useUser } from '@clerk/nextjs';
 
 interface MasonProfileProps {
@@ -447,6 +448,8 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
         return <SkillsTab />;
       case 'settings':
         return <SettingsTab profileData={profileData} setProfileData={setProfileData} />;
+      case 'jobs':
+        return <MyJobs />;
       default:
         return <OverviewTab mason={profileData} />;
     }
@@ -832,6 +835,18 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                 >
                   {profileData.profileType === 'worker' ? 'Skills' : 'Services'}
                 </button> 
+                {
+                  profileData.profileType === "employer" &&
+                  (
+
+                    <button 
+                      className={`tab ${activeTab === 'jobs' ? 'tab-active' : ''}`}
+                      onClick={() => setActiveTab('jobs')}
+                    >
+                      Jobs
+                    </button>
+                  )
+                }
                 <button 
                   className={`tab ${activeTab === 'settings' ? 'tab-active' : ''}`}
                   onClick={() => setActiveTab('settings')}
