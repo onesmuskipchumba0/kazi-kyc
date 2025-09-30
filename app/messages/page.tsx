@@ -1,8 +1,8 @@
-// app/messages/page.tsx
 "use client";
 
 import { Plus, Search, Send, Phone, Video, MoreVertical, Info, User, Briefcase, MapPin, Mail, PhoneCall, MessageCircle, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -32,6 +32,7 @@ interface Message {
 }
 
 export default function MessagesPage() {
+  const router = useRouter();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedChat, setSelectedChat] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -42,38 +43,78 @@ export default function MessagesPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const searchParams = useSearchParams();
+  const userParam = searchParams.get("user");
 
-  // Fetch current user and conversations on initial load
+  // Fixed: Simplified userParam handling to prevent redirect loops
+  useEffect(() => {
+    if (userParam && initialLoadComplete && currentUser) {
+      handleUserParam(userParam);
+    }
+  }, [userParam, initialLoadComplete, currentUser]);
+
+  const handleUserParam = async (targetUserId: string) => {
+    try {
+      // First, check if we already have a conversation with this user
+      const existingConversation = conversations.find(
+        (c) => c.otherUser.public_id === targetUserId
+      );
+
+      if (existingConversation) {
+        setSelectedChat(existingConversation);
+        return;
+      }
+
+      // If no existing conversation, try to get user info and create a new chat
+      const userResponse = await fetch(`/api/user/${targetUserId}`);
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        if (userData.user) {
+          handleNewChat(userData.user);
+        }
+      }
+    } catch (error) {
+      console.error("Error handling user param:", error);
+    }
+  };
+
+  // Fixed: Simplified data initialization
   useEffect(() => {
     const initializeData = async () => {
       try {
-        // Fetch current user first
-        const userResponse = await fetch('/api/user');
-        const userData = await userResponse.json();
+        setLoading(true);
         
-        if (userData.user) {
-          setCurrentUser(userData.user);
-          
-          // Then fetch conversations
-          const conversationsResponse = await fetch('/api/conversations');
-          const conversationsData = await conversationsResponse.json();
-          
-          let conversationsArray = [];
-          if (Array.isArray(conversationsData.conversations)) {
-            conversationsArray = conversationsData.conversations;
-          } else if (conversationsData.conversations && typeof conversationsData.conversations === 'object') {
-            conversationsArray = [conversationsData.conversations];
-          } else if (conversationsData.id) {
-            conversationsArray = [conversationsData];
-          }
-          
-          setConversations(conversationsArray);
-          setError(null);
-        } else {
-          setError("Failed to load user data");
+        // Fetch current user
+        const userResponse = await fetch("/api/user");
+        if (!userResponse.ok) throw new Error("Failed to fetch user");
+        
+        const userData = await userResponse.json();
+        if (!userData.user) throw new Error("No user data found");
+
+        setCurrentUser(userData.user);
+
+        // Fetch conversations
+        const conversationsResponse = await fetch("/api/conversations");
+        if (!conversationsResponse.ok) throw new Error("Failed to fetch conversations");
+        
+        const conversationsData = await conversationsResponse.json();
+        
+        let conversationsArray: Conversation[] = [];
+        if (Array.isArray(conversationsData)) {
+          conversationsArray = conversationsData;
+        } else if (Array.isArray(conversationsData.conversations)) {
+          conversationsArray = conversationsData.conversations;
+        } else if (conversationsData.conversations && typeof conversationsData.conversations === "object") {
+          conversationsArray = [conversationsData.conversations];
+        } else if (conversationsData.id) {
+          conversationsArray = [conversationsData];
         }
+
+        setConversations(conversationsArray);
+        setError(null);
       } catch (error) {
-        setError('Failed to load data');
+        console.error("Error initializing data:", error);
+        setError("Failed to load data");
       } finally {
         setLoading(false);
         setInitialLoadComplete(true);
@@ -91,7 +132,7 @@ export default function MessagesPage() {
   }, [selectedChat, currentUser]);
 
   const fetchMessages = async (userId: string) => {
-    if (!currentUser || !currentUser.public_id) {
+    if (!currentUser?.public_id) {
       setError("User not authenticated");
       return;
     }
@@ -103,21 +144,20 @@ export default function MessagesPage() {
       const response = await fetch(`/api/messages/${userId}`);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error}`);
+        throw new Error(`Failed to fetch messages: ${response.status}`);
       }
       
       const data = await response.json();
       
-      if (data.messages) {
-        setMessages(data.messages || []);
-        setError(null);
-      } else if (data.error) {
-        setError(data.error);
+      if (data.messages && Array.isArray(data.messages)) {
+        setMessages(data.messages);
+      } else if (Array.isArray(data)) {
+        setMessages(data);
       } else {
         setMessages([]);
       }
     } catch (error) {
+      console.error("Error fetching messages:", error);
       setError('Failed to load messages');
       setMessages([]);
     } finally {
@@ -144,7 +184,8 @@ export default function MessagesPage() {
   };
 
   const handleSendMessage = async (content: string, receiverId: string) => {
-    if (!currentUser) {
+    if (!currentUser?.public_id) {
+      setError("User not authenticated");
       return false;
     }
 
@@ -159,34 +200,43 @@ export default function MessagesPage() {
         }),
       });
       
-      const result = await response.json();
-      
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to send message" }));
+        setError(errorData.error || "Failed to send message");
         return false;
       }
 
+      const result = await response.json();
+
+      // Refresh messages
       if (selectedChat) {
         fetchMessages(selectedChat.otherUser.public_id);
       }
       
-      // Update the conversation list with the new message
+      // Update conversation list
       setConversations(prev => prev.map(conv => 
         conv.otherUser.public_id === receiverId 
-          ? { ...conv, lastMessage: content, timestamp: new Date().toISOString() }
+          ? { 
+              ...conv, 
+              lastMessage: content, 
+              timestamp: new Date().toISOString(),
+              unreadCount: 0
+            }
           : conv
       ));
       
       return true;
     } catch (error) {
+      console.error("Error sending message:", error);
+      setError("Failed to send message");
       return false;
     }
   };
 
   return (
     <div className="flex h-[calc(100vh-4rem)] lg:h-[calc(100vh-2rem)]">
-      {/* Sidebar - Show on mobile when no chat is selected */}
+      {/* Sidebar */}
       <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-[280px] border-r border-base-200 bg-base-100 flex-col`}>
-        {/* Header with mobile back button */}
         <div className="flex items-center justify-between p-4 font-semibold">
           <div className="flex items-center gap-2">
             {selectedChat && (
@@ -231,12 +281,18 @@ export default function MessagesPage() {
         {error && (
           <div className="mx-4 my-2 p-2 bg-error/10 border border-error/20 rounded text-error text-sm">
             {error}
+            <button 
+              className="float-right text-error/60 hover:text-error"
+              onClick={() => setError(null)}
+            >
+              <X size={14} />
+            </button>
           </div>
         )}
 
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto">
-          {!initialLoadComplete ? (
+          {loading ? (
             <ConversationListSkeleton />
           ) : filteredConversations.length === 0 ? (
             <div className="text-center p-8 text-base-content/60 text-sm">
@@ -303,6 +359,11 @@ export default function MessagesPage() {
     </div>
   );
 }
+
+// ... (Keep all the existing component functions the same: 
+// ConversationListSkeleton, ConversationItem, EmptyState, 
+// UserInfoModal, ChatWindow, NewChatForm, MessagesSkeleton)
+// They don't need changes
 
 // Skeleton loader for conversation list
 function ConversationListSkeleton() {
@@ -733,7 +794,7 @@ function ChatWindow({
   );
 }
 
-// New Chat Form Component (keep the same as before)
+// New Chat Form Component
 function NewChatForm({
   onCreate,
   onCancel,
