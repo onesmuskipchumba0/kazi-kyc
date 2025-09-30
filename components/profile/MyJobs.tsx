@@ -160,28 +160,49 @@ const MyJobs: React.FC = () => {
   };
 
   // Function to update application status
-  const handleUpdateApplicationStatus = async (applicationId: string, newStatus: string) => {
-    setIsUpdatingStatus(applicationId);
-    try {
-      // Update the application status
-      await axios.patch(`/api/applications/${applicationId}`, {
-        status: newStatus
-      });
+  // In the handleUpdateApplicationStatus function in MyJobs.tsx, update it to:
+const handleUpdateApplicationStatus = async (applicationId: string, newStatus: string) => {
+  setIsUpdatingStatus(applicationId);
+  try {
+    console.log(`Updating application ${applicationId} to status: ${newStatus}`);
+    
+    // Update the application status
+    const response = await axios.patch(`/api/applications/${applicationId}`, {
+      status: newStatus
+    });
 
-      // Update local state
-      setApplications(prev => prev.map(app => 
-        app.id === applicationId ? { ...app, status: newStatus } : app
-      ));
+    console.log("Update response:", response.data);
 
-      // Show success feedback
-      console.log(`Application ${applicationId} status updated to ${newStatus}`);
-    } catch (err) {
-      console.error("Failed to update application status:", err);
-      // You might want to show an error toast here
-    } finally {
-      setIsUpdatingStatus(null);
+    // Update local state
+    setApplications(prev => prev.map(app => 
+      app.id === applicationId ? { ...app, status: newStatus } : app
+    ));
+
+    // Show success feedback
+    console.log(`Application ${applicationId} status updated to ${newStatus}`);
+    
+    // You could add a toast notification here
+    // toast.success(`Application status updated to ${newStatus}`);
+    
+  } catch (err: any) {
+    console.error("Failed to update application status:", err);
+    
+    // More detailed error logging
+    if (err.response) {
+      console.error("Response error:", err.response.data);
+      console.error("Response status:", err.response.status);
+    } else if (err.request) {
+      console.error("Request error:", err.request);
+    } else {
+      console.error("Error:", err.message);
     }
-  };
+    
+    // You could add an error toast here
+    // toast.error(`Failed to update application: ${err.response?.data?.error || err.message}`);
+  } finally {
+    setIsUpdatingStatus(null);
+  }
+};
 
   // Function to close modals
   const handleCloseModal = () => {
