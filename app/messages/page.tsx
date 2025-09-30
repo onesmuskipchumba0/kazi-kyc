@@ -3,6 +3,7 @@
 
 import { Plus, Search, Send, Phone, Video, MoreVertical, Info, User, Briefcase, MapPin, Mail, PhoneCall, MessageCircle, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface User {
   id: string;
@@ -42,46 +43,99 @@ export default function MessagesPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const searchParams = useSearchParams();
+const userParam = searchParams.get("user");
 
   // Fetch current user and conversations on initial load
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        // Fetch current user first
-        const userResponse = await fetch('/api/user');
-        const userData = await userResponse.json();
-        
-        if (userData.user) {
-          setCurrentUser(userData.user);
-          
-          // Then fetch conversations
-          const conversationsResponse = await fetch('/api/conversations');
-          const conversationsData = await conversationsResponse.json();
-          
-          let conversationsArray = [];
-          if (Array.isArray(conversationsData.conversations)) {
-            conversationsArray = conversationsData.conversations;
-          } else if (conversationsData.conversations && typeof conversationsData.conversations === 'object') {
-            conversationsArray = [conversationsData.conversations];
-          } else if (conversationsData.id) {
-            conversationsArray = [conversationsData];
-          }
-          
-          setConversations(conversationsArray);
-          setError(null);
-        } else {
-          setError("Failed to load user data");
+  // Fetch current user and conversations once
+useEffect(() => {
+    if (userParam) {
+      // 🔹 Check if conversation already exists with this user
+      // If not, create a new one and redirect to it
+      const startConversation = async () => {
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetUserId: userParam }),
+        });
+
+        const convo = await res.json();
+
+        if (convo?.id) {
+          // redirect to that conversation
+          window.location.href = `/messages/${convo.id}`;
         }
-      } catch (error) {
-        setError('Failed to load data');
-      } finally {
-        setLoading(false);
-        setInitialLoadComplete(true);
+      };
+
+      startConversation();
+    }
+  }, [userParam]);
+
+useEffect(() => {
+  const initializeData = async () => {
+    try {
+      const userResponse = await fetch("/api/user");
+      const userData = await userResponse.json();
+
+      if (userData.user) {
+        setCurrentUser(userData.user);
+
+        const conversationsResponse = await fetch("/api/conversations");
+        const conversationsData = await conversationsResponse.json();
+
+        let conversationsArray: Conversation[] = [];
+        if (Array.isArray(conversationsData.conversations)) {
+          conversationsArray = conversationsData.conversations;
+        } else if (conversationsData.conversations && typeof conversationsData.conversations === "object") {
+          conversationsArray = [conversationsData.conversations];
+        } else if (conversationsData.id) {
+          conversationsArray = [conversationsData];
+        }
+
+        setConversations(conversationsArray);
+        setError(null);
+      } else {
+        setError("Failed to load user data");
+      }
+    } catch (error) {
+      setError("Failed to load data");
+    } finally {
+      setLoading(false);
+      setInitialLoadComplete(true);
+    }
+  };
+
+  initializeData();
+}, []); // ✅ empty dependency = run once
+
+// Handle selecting/starting chat AFTER initial load
+useEffect(() => {
+  if (!initialLoadComplete || !userParam || !currentUser) return;
+
+  const existing = conversations.find(
+    (c) => c.otherUser.public_id === userParam
+  );
+
+  if (existing) {
+    setSelectedChat(existing);
+  } else {
+    const fetchAndStart = async () => {
+      try {
+        const res = await fetch(`/api/user/${userParam}`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data.user) {
+          handleNewChat(data.user);
+        }
+      } catch (err) {
+        console.error("❌ Failed to start new chat:", err);
       }
     };
+    fetchAndStart();
+  }
+}, [initialLoadComplete, userParam, currentUser]); // ✅ no conversations here
 
-    initializeData();
-  }, []);
 
   // Fetch messages when a chat is selected
   useEffect(() => {
