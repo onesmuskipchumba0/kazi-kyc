@@ -560,7 +560,7 @@ export default function NetworkPage() {
                           • {person.experience || "Experience not specified"}
                         </span>
                       </div>
-                      <p className="text-sm text-base-content/60">0 mutual connections</p>
+                      <p className="text-sm text-base-content/60">{allConnections.length} mutual connections</p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {person.coreSkills?.map((skill, idx) => (
                           <span

@@ -19,6 +19,7 @@ interface Employer {
   avatarUrl?: string;
   rating: number;
   verified: boolean;
+  public_id: string;
 }
 
 
@@ -82,21 +83,17 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
 
     const application_res = await axios.get(`/api/user/applications/${user.public_id}`);
     const applicationsDB: ApplicationDB[] = application_res.data.applications;
-    console.log(applicationsDB);
 
     set({ applications_db: applicationsDB });
 
     const formated_applications: Application[] = await Promise.all(
   applicationsDB.map(async (app) => {
-    console.log("Processing application:", app.id);
 
     const job_res = await axios.get(`/api/jobs/${app.job_id}`);
     const job: Job = job_res.data.job;
-    console.log("Fetched job:", job.id);
 
     const employer_res = await axios.get(`/api/user/${job.employer_id}`);
     const employer: Employer = employer_res.data.user;
-    console.log("Fetched employer:", employer);
 
     const formattedDate = new Date(job.created_at).toLocaleDateString("en-US", {
       year: "numeric",
@@ -110,6 +107,7 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
       rating: employer.rating,
       progress: 100,
       pay_type: job.pay_type,
+      employer_id: employer.public_id,
       description: job.description,
       category: job.category,
       location: job.location,
@@ -120,11 +118,7 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
   })
 );
 
-console.log("Final formatted applications:", formated_applications);
-
-
     set({ applications: formated_applications });
-    console.log(formated_applications)
   } catch (err) {
     console.log("an error occurred: ", err);
   }

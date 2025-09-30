@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
           firstName,
           lastName,
           profileType,
-          location
+          location,
+          connections
         )
       `)
       .eq('status', 'active')
