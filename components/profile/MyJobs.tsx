@@ -21,7 +21,11 @@ import {
   Bookmark,
   Share2,
   ArrowRight,
-  CheckCircle
+  CheckCircle,
+  Download,
+  MapPin as LocationIcon,
+  CheckCircle2,
+  UserCheck
 } from "lucide-react";
 
 interface Job {
@@ -44,6 +48,27 @@ interface Job {
   [key: string]: any;
 }
 
+interface Application {
+  id: string;
+  job_id: string;
+  applicant_id: string;
+  status: string;
+  cover_letter: string;
+  applied_at: string;
+}
+
+interface Applicant {
+  public_id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  location?: string;
+  avatarUrl?: string;
+  profileType?: string;
+  [key: string]: any;
+}
+
 const MyJobs: React.FC = () => {
   const fetchUser = useUserStore((state) => state.fetchUser);
   const user = useUserStore((state) => state.user);
@@ -51,7 +76,12 @@ const MyJobs: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isJobModalOpen, setIsJobModalOpen] = useState(false);
+  const [isApplicantsModalOpen, setIsApplicantsModalOpen] = useState(false);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [applicants, setApplicants] = useState<Map<string, Applicant>>(new Map());
+  const [isLoadingApplications, setIsLoadingApplications] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -83,13 +113,83 @@ const MyJobs: React.FC = () => {
   // Function to open job details modal
   const handleViewDetails = (job: Job) => {
     setSelectedJob(job);
-    setIsModalOpen(true);
+    setIsJobModalOpen(true);
   };
 
-  // Function to close modal
+  // Function to open applicants modal
+  const handleViewApplicants = async (job: Job) => {
+    setSelectedJob(job);
+    setIsLoadingApplications(true);
+    setIsApplicantsModalOpen(true);
+
+    try {
+      // Fetch applications for this job
+      const applicationsRes = await axios.get(`/api/applications/jobs/${job.id}`);
+      const applicationsData = applicationsRes.data.applications || [];
+      setApplications(applicationsData);
+
+      // Fetch applicant details for each application
+      const applicantPromises = applicationsData.map(async (application: Application) => {
+        try {
+          const applicantRes = await axios.get(`/api/user/${application.applicant_id}`);
+          console.log(applicantRes.data.user)
+          return { applicantId: application.applicant_id, data: applicantRes.data.user };
+        } catch (err) {
+          console.error(`Failed to fetch applicant ${application.applicant_id}:`, err);
+          return null;
+        }
+      });
+
+      const applicantResults = await Promise.all(applicantPromises);
+      const applicantMap = new Map<string, Applicant>();
+      
+      applicantResults.forEach(result => {
+        if (result && result.data) {
+          applicantMap.set(result.applicantId, result.data);
+        }
+      });
+
+      setApplicants(applicantMap);
+    } catch (err) {
+      console.error("Failed to fetch applications:", err);
+      setApplications([]);
+      setApplicants(new Map());
+    } finally {
+      setIsLoadingApplications(false);
+    }
+  };
+
+  // Function to update application status
+  const handleUpdateApplicationStatus = async (applicationId: string, newStatus: string) => {
+    setIsUpdatingStatus(applicationId);
+    try {
+      // Update the application status
+      await axios.patch(`/api/applications/${applicationId}`, {
+        status: newStatus
+      });
+
+      // Update local state
+      setApplications(prev => prev.map(app => 
+        app.id === applicationId ? { ...app, status: newStatus } : app
+      ));
+
+      // Show success feedback
+      console.log(`Application ${applicationId} status updated to ${newStatus}`);
+    } catch (err) {
+      console.error("Failed to update application status:", err);
+      // You might want to show an error toast here
+    } finally {
+      setIsUpdatingStatus(null);
+    }
+  };
+
+  // Function to close modals
   const handleCloseModal = () => {
-    setIsModalOpen(false);
+    setIsJobModalOpen(false);
+    setIsApplicantsModalOpen(false);
     setSelectedJob(null);
+    setApplications([]);
+    setApplicants(new Map());
   };
 
   // Mock function for saving job
@@ -102,6 +202,19 @@ const MyJobs: React.FC = () => {
   const handleShareJob = (job: Job) => {
     console.log("Sharing job:", job.title);
     // Implement actual share functionality
+  };
+
+  // Get status badge color
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      pending: { class: "badge-warning", label: "Pending" },
+      accepted: { class: "badge-success", label: "Accepted" },
+      rejected: { class: "badge-error", label: "Rejected" },
+      interviewing: { class: "badge-info", label: "Interviewing" }
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    return <div className={`badge ${config.class}`}>{config.label}</div>;
   };
 
   if (isLoading) {
@@ -267,7 +380,10 @@ const MyJobs: React.FC = () => {
                           >
                             View Details
                           </button>
-                          <button className="btn btn-sm btn-primary">
+                          <button 
+                            className="btn btn-sm btn-primary"
+                            onClick={() => handleViewApplicants(job)}
+                          >
                             View Applicants
                           </button>
                         </div>
@@ -282,7 +398,7 @@ const MyJobs: React.FC = () => {
       </div>
 
       {/* Job Details Modal */}
-      {isModalOpen && selectedJob && (
+      {isJobModalOpen && selectedJob && (
         <div className="modal modal-open">
           <div className="modal-box max-w-4xl max-h-[90vh] overflow-hidden">
             {/* Modal Header */}
@@ -448,6 +564,180 @@ const MyJobs: React.FC = () => {
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </button>
               </div>
+            </div>
+          </div>
+          
+          {/* Backdrop */}
+          <div className="modal-backdrop" onClick={handleCloseModal}></div>
+        </div>
+      )}
+
+      {/* Applicants Modal */}
+      {isApplicantsModalOpen && selectedJob && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-6xl max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2">
+                  Applicants for {selectedJob.title}
+                </h2>
+                <p className="text-base-content/70">
+                  {applications.length} applicant{applications.length !== 1 ? 's' : ''} found
+                </p>
+              </div>
+              
+              <button 
+                className="btn btn-sm btn-circle btn-ghost ml-4"
+                onClick={handleCloseModal}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[70vh] pr-4">
+              {isLoadingApplications ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mr-3" />
+                  <p>Loading applicants...</p>
+                </div>
+              ) : applications.length === 0 ? (
+                <div className="text-center py-12">
+                  <Users className="h-16 w-16 text-base-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold mb-2">No applicants yet</h3>
+                  <p className="text-base-content/70">
+                    No one has applied to this job posting yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {applications.map((application) => {
+                    const applicant = applicants.get(application.applicant_id);
+                    return (
+                      <div key={application.id} className="card bg-base-200 shadow-sm">
+                        <div className="card-body">
+                          <div className="flex flex-col lg:flex-row gap-6">
+                            {/* Applicant Info */}
+                            <div className="flex-1">
+                              <div className="flex items-start gap-4 mb-4">
+                                <div className="avatar">
+                                  <div className="w-16 h-16 rounded-full bg-base-300 flex items-center justify-center">
+                                    {applicant?.avatarUrl ? (
+                                      <img 
+                                        src={applicant.avatarUrl} 
+                                        alt={`${applicant.firstName} ${applicant.lastName}`}
+                                        className="rounded-full"
+                                      />
+                                    ) : (
+                                      <User className="h-8 w-8 text-base-content/50" />
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="text-lg font-semibold">
+                                    {applicant ? `${applicant.firstName} ${applicant.lastName}` : 'Loading...'}
+                                  </h3>
+                                  <div className="flex flex-wrap gap-4 text-sm text-base-content/70 mt-2">
+                                    {applicant?.email && (
+                                      <div className="flex items-center gap-1">
+                                        <Mail className="h-4 w-4" />
+                                        <span>{applicant.email}</span>
+                                      </div>
+                                    )}
+                                    {applicant?.phoneNumber && (
+                                      <div className="flex items-center gap-1">
+                                        <Phone className="h-4 w-4" />
+                                        <span>{applicant.phoneNumber}</span>
+                                      </div>
+                                    )}
+                                    {applicant?.location && (
+                                      <div className="flex items-center gap-1">
+                                        <LocationIcon className="h-4 w-4" />
+                                        <span>{applicant.location}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="mt-2">
+                                    {getStatusBadge(application.status)}
+                                    <span className="text-xs text-base-content/60 ml-2">
+                                      Applied on {new Date(application.applied_at).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Cover Letter */}
+                              <div className="mt-4">
+                                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                  <FileText className="h-4 w-4" />
+                                  Cover Letter
+                                </h4>
+                                <p className="text-base-content/80 bg-base-100 p-4 rounded-lg">
+                                  {application.cover_letter}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex flex-col gap-2 lg:w-48">
+                              <button 
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleUpdateApplicationStatus(application.id, 'accepted')}
+                                disabled={application.status === 'accepted' || isUpdatingStatus === application.id}
+                              >
+                                {isUpdatingStatus === application.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <UserCheck className="h-4 w-4" />
+                                )}
+                                {application.status === 'accepted' ? 'Hired' : 'Hire Applicant'}
+                              </button>
+                              
+                              <button 
+                                className="btn btn-outline btn-sm"
+                                onClick={() => handleUpdateApplicationStatus(application.id, 'interviewing')}
+                                disabled={application.status === 'interviewing' || isUpdatingStatus === application.id}
+                              >
+                                {isUpdatingStatus === application.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Calendar className="h-4 w-4" />
+                                )}
+                                Schedule Interview
+                              </button>
+
+                              <button 
+                                className="btn btn-error btn-outline btn-sm"
+                                onClick={() => handleUpdateApplicationStatus(application.id, 'rejected')}
+                                disabled={application.status === 'rejected' || isUpdatingStatus === application.id}
+                              >
+                                {isUpdatingStatus === application.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <X className="h-4 w-4" />
+                                )}
+                                Reject
+                              </button>
+
+                              <button className="btn btn-ghost btn-sm mt-2">
+                                <Download className="h-4 w-4 mr-2" />
+                                Download Resume
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="modal-action">
+              <button className="btn btn-ghost" onClick={handleCloseModal}>
+                Close
+              </button>
             </div>
           </div>
           
