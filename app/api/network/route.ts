@@ -2,12 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseClient';
 
+// api/network/route.ts
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
-    console.log('=== NETWORK API CALLED ===');
-
     if (!supabaseAdmin) {
-      console.error('supabaseAdmin is null');
       return NextResponse.json(
         { error: 'Server configuration error: supabaseAdmin not found' },
         { status: 500 }
@@ -18,18 +16,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const type = searchParams.get('type');
     const userId = searchParams.get('userId');
 
-    console.log('Request params - type:', type, 'userId:', userId);
-
     if (!type || !userId) {
-      console.error('Missing parameters');
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
     let data: any[] = [];
 
     if (type === 'connections' || type === 'network') {
-      console.log('Fetching connections for user:', userId);
-
       const { data: connections, error } = await supabaseAdmin
         .from('networks')
         .select('*')
@@ -38,24 +31,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
       if (error) throw error;
       data = connections || [];
-      console.log('Found connections:', data.length);
 
     } else if (type === 'requests') {
-      console.log('Fetching requests for user:', userId);
-
+      // FIXED: Return all fields needed by the frontend
       const { data: requests, error } = await supabaseAdmin
         .from('networks')
-        .select('id, user_id')
-        .eq('target_user_id', userId)
+        .select('*')  // Changed from 'id, user_id' to '*'
+        .eq('user_id', userId)
         .eq('status', 'pending');
 
       if (error) throw error;
       data = requests || [];
-      console.log('Found requests:', data.length);
 
     } else if (type === 'discover') {
-      console.log('Fetching discover users for user:', userId);
-
       // Get existing connections and requests to exclude
       const { data: existingConnections, error: connectionsError } = await supabaseAdmin
         .from('networks')
@@ -63,31 +51,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         .or(`user_id.eq.${userId},target_user_id.eq.${userId}`);
 
       if (connectionsError) {
-        console.error('Error fetching existing connections:', connectionsError);
         throw connectionsError;
       }
 
-      // Create set of excluded user IDs (more efficient)
+      // Create set of excluded user IDs
       const excludedIds = new Set([userId]);
       existingConnections?.forEach(conn => {
         excludedIds.add(conn.user_id);
         excludedIds.add(conn.target_user_id);
       });
 
-      console.log('Excluded IDs count:', excludedIds.size);
-      console.log('Excluded IDs:', Array.from(excludedIds));
-
       // Build the query for discover users
       let query = supabaseAdmin
         .from('user')
         .select('public_id, name, avatarUrl, location, experience, coreSkills')
-        .neq('public_id', userId) // Always exclude current user
+        .neq('public_id', userId)
         .limit(20);
 
-      // If we have other IDs to exclude, add them one by one
-      // This is safer than trying to use .not() with complex conditions
       Array.from(excludedIds).forEach(excludedId => {
-        if (excludedId !== userId) { // userId already excluded by .neq()
+        if (excludedId !== userId) {
           query = query.neq('public_id', excludedId);
         }
       });
@@ -95,16 +77,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       const { data: users, error: usersError } = await query;
 
       if (usersError) {
-        console.error('Error fetching discover users:', usersError);
         throw usersError;
       }
 
       data = users || [];
-      console.log('Discover users found:', data.length);
       
-      // If no users found, try to get some random users excluding current user only
       if (data.length === 0) {
-        console.log('No users found with exclusions, trying without connection exclusions...');
         const { data: fallbackUsers, error: fallbackError } = await supabaseAdmin
           .from('user')
           .select('public_id, name, avatarUrl, location, experience, coreSkills')
@@ -113,7 +91,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           
         if (!fallbackError) {
           data = fallbackUsers || [];
-          console.log('Fallback users found:', data.length);
         }
       }
 
@@ -121,26 +98,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 });
     }
 
-    console.log('Returning data count:', data.length);
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Network table API error:', error);
-    
-    // More detailed error information
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-    console.error('Error details:', {
-      message: errorMessage,
-      stack: error instanceof Error ? error.stack : 'No stack trace'
-    });
-    
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-      }, 
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
