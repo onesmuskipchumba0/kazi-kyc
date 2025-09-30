@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MoreVertical, MapPin, Star, Search } from "lucide-react";
 import { FaPlus, FaUserPlus } from "react-icons/fa";
 import { FaMessage, FaX } from "react-icons/fa6";
+import { useRouter } from "next/navigation"; // Add this import
 
 const TABS = ["My Network", "Requests", "Discover People"] as const;
 type Tab = (typeof TABS)[number];
@@ -30,6 +31,7 @@ interface CurrentUser {
 }
 
 export default function NetworkPage() {
+  const router = useRouter(); // Initialize router
   const [activeTab, setActiveTab] = useState<Tab>("My Network");
   const [query, setQuery] = useState("");
   const [people, setPeople] = useState<Person[]>([]);
@@ -102,78 +104,74 @@ export default function NetworkPage() {
   };
 
   const fetchNetworkData = async () => {
-  try {
-    setLoading(true);
-    const type = getApiType(activeTab);
-    const userId = currentUser?.user.public_id;
+    try {
+      setLoading(true);
+      const type = getApiType(activeTab);
+      const userId = currentUser?.user.public_id;
 
-    let response;
-    if (query && activeTab === "Discover People") {
-      response = await fetch(
-        `/api/user/search?q=${encodeURIComponent(query)}`
-      );
-    } else {
-      response = await fetch(`/api/network?type=${type}&userId=${userId}`);
-    }
-
-    if (!response.ok) throw new Error("Failed to fetch network data");
-
-    const data = await response.json();
-    console.log("📦 Raw network data from API:", data); // 👈 log the raw API response
-
-    let usersArray: Person[] = [];
-
-if (Array.isArray(data)) {
-  usersArray = await Promise.all(
-    data.map(async (u) => {
-      // fetch user details for each user_id
-      const res = await fetch(`/api/user/${u.user_id}`);
-      let userDetails: any = {};
-      if (res.ok) {
-        userDetails = await res.json();
+      let response;
+      if (query && activeTab === "Discover People") {
+        response = await fetch(
+          `/api/user/search?q=${encodeURIComponent(query)}`
+        );
+      } else {
+        response = await fetch(`/api/network?type=${type}&userId=${userId}`);
       }
 
-      return {
-        public_id: u.user_id,
-        name: userDetails.user.name || "Unknown User",
-        avatarUrl: userDetails.user.avatarUrl || null,
-        location: userDetails.user.location || null,
-        coreSkills: userDetails.user.coreSkills || [],
-        experience: userDetails.user.experience || null,
-        requestId: u.id || undefined,
-      } as Person;
-    })
-  );
-}
+      if (!response.ok) throw new Error("Failed to fetch network data");
 
+      const data = await response.json();
+      console.log("📦 Raw network data from API:", data);
 
+      let usersArray: Person[] = [];
 
-    console.log("✅ Parsed usersArray:", usersArray); // 👈 log after parsing
+      if (Array.isArray(data)) {
+        usersArray = await Promise.all(
+          data.map(async (u) => {
+            const res = await fetch(`/api/user/${u.user_id}`);
+            let userDetails: any = {};
+            if (res.ok) {
+              userDetails = await res.json();
+            }
 
-    setPeople(usersArray);
-
-    if (!query) {
-      const count = usersArray.length;
-      switch (activeTab) {
-        case "My Network":
-          setNetworkCount(count);
-          break;
-        case "Requests":
-          setRequestsCount(count);
-          break;
-        case "Discover People":
-          setDiscoverCount(count);
-          break;
+            return {
+              public_id: u.user_id,
+              name: userDetails.user.name || "Unknown User",
+              avatarUrl: userDetails.user.avatarUrl || null,
+              location: userDetails.user.location || null,
+              coreSkills: userDetails.user.coreSkills || [],
+              experience: userDetails.user.experience || null,
+              requestId: u.id || undefined,
+            } as Person;
+          })
+        );
       }
-    }
-  } catch (error) {
-    console.error("Error fetching network data:", error);
-    setPeople([]);
-  } finally {
-    setLoading(false);
-  }
-};
 
+      console.log("✅ Parsed usersArray:", usersArray);
+
+      setPeople(usersArray);
+
+      if (!query) {
+        const count = usersArray.length;
+        switch (activeTab) {
+          case "My Network":
+            setNetworkCount(count);
+            break;
+          case "Requests":
+            setRequestsCount(count);
+            break;
+          case "Discover People":
+            setDiscoverCount(count);
+            break;
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching network data:", error);
+      setPeople([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getApiType = (tab: Tab): string => {
     switch (tab) {
@@ -186,6 +184,12 @@ if (Array.isArray(data)) {
       default:
         return "network";
     }
+  };
+
+  // Add this function to handle messaging
+  const handleMessage = (targetUserId: string) => {
+    // Navigate to messages page with the target user ID
+    router.push(`/messages?user=${targetUserId}`);
   };
 
   const handleConnect = async (targetUserId: string) => {
@@ -411,7 +415,10 @@ if (Array.isArray(data)) {
                         <FaX />
                         <span>Refuse</span>
                       </button>
-                      <button className="btn px-3 py-1 text-xs rounded-md hover:bg-blue-200 bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <button 
+                        onClick={() => handleMessage(person.public_id)}
+                        className="btn px-3 py-1 text-xs rounded-md hover:bg-blue-200 bg-blue-100 text-blue-700 flex items-center gap-1"
+                      >
                         <FaMessage />
                         Message
                       </button>
@@ -427,7 +434,23 @@ if (Array.isArray(data)) {
                         <FaUserPlus />
                         Connect
                       </button>
-                      <button className="btn px-3 py-1 text-xs rounded-md bg-blue-100 text-blue-700 flex items-center gap-1">
+                      <button 
+                        onClick={() => handleMessage(person.public_id)}
+                        className="btn px-3 py-1 text-xs rounded-md bg-blue-100 text-blue-700 flex items-center gap-1"
+                      >
+                        <FaMessage />
+                        Message
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Add message button for My Network tab */}
+                  {activeTab === "My Network" && (
+                    <div className="flex gap-2 mt-3">
+                      <button 
+                        onClick={() => handleMessage(person.public_id)}
+                        className="btn px-3 py-1 text-xs rounded-md bg-blue-100 text-blue-700 flex items-center gap-1"
+                      >
                         <FaMessage />
                         Message
                       </button>
