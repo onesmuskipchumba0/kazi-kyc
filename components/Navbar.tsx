@@ -16,6 +16,7 @@ import {
 import Image from 'next/image';
 import { useUser, SignOutButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
+import { useUserStore } from '@/lib/user/UserStore';
 
 function Navbar() {
   const { user } = useUser();
@@ -75,7 +76,7 @@ function Navbar() {
               <p className="text-sm font-semibold truncate">
                 {user.fullName || 'User'}
               </p>
-              <p className="text-xs text-base-content/50">Mason • Nairobi</p>
+              <p className="text-xs text-base-content/50">KaziKYC - connect and work</p>
             </div>
           </div>
           <SignOutButton>

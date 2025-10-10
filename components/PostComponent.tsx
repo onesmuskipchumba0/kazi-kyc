@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, useEffect } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Upload, X } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import toast from "react-hot-toast";
+import { useUserStore } from "@/lib/user/UserStore";
 
 type PostComponentProps = {
   userId: string;
@@ -18,6 +19,7 @@ interface FormData {
 }
 
 export default function PostComponent({ userId, modalId }: PostComponentProps) {
+  const { user, fetchUser } = useUserStore();
   const { getToken } = useAuth();
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -30,6 +32,9 @@ export default function PostComponent({ userId, modalId }: PostComponentProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  useEffect(( ) => {
+    fetchUser()
+  },[fetchUser])
   // Form validation
   const validateForm = (): boolean => {
     const newErrors: Partial<FormData> = {};

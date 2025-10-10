@@ -23,8 +23,6 @@ interface SettingsSection {
 const SettingsLayout = ({ activeTab, onTabChange, children }: SettingsLayoutProps) => {
   const settingsSections: SettingsSection[] = [
     { id: 'account', label: 'Account', icon: User },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-    { id: 'privacy', label: 'Privacy & Safety', icon: Shield },
     { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
     { id: 'help', label: 'Help & Support', icon: HelpCircle },
   ];
