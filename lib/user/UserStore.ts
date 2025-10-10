@@ -1,17 +1,22 @@
 import { create } from "zustand";
 import axios from "axios";
 
-export interface UserType {
+// In your UserStore or types file
+interface UserType {
+  id: string;
   public_id: string;
-  name: string;
-  email: string;
   firstName: string;
   lastName: string;
-  phoneNumber: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
   profileType: string;
-  experience:string;
-  coreSkills: string,
-  avatarUrl: string
+  coreSkills?: string[] | string | null;
+  rating?: number;
+  jobsCompleted?: number;
+  profileViews?: number;
+  earnings?: number;
+  location?: string;
 }
 
 interface UserState {

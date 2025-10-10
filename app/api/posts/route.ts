@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error creating post:', error);
-      return NextResponse.json({ error: "Failed to create post" }, { status: 500 });
+      return NextResponse.json({ error: `Failed to create post, ${error.message}` }, { status: 500 });
     }
 
     return NextResponse.json({ post }, { status: 201 });

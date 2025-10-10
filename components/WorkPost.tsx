@@ -16,7 +16,7 @@ interface WorkPostProps {
   author?: {
     name: string;
     profession: string;
-    avatar?: string;
+    avatarUrl: string;
     rating: number;
     location: string;
   };
@@ -33,6 +33,7 @@ export default function WorkPost({
   author = {
     name: "Anonymous",
     profession: "Professional",
+    avatarUrl:"",
     rating: 0,
     location: "Remote",
   },
@@ -147,7 +148,6 @@ export default function WorkPost({
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
-
       console.log("Attempting to create user:", userData);
 
       const { data, error } = await supabase
@@ -401,8 +401,8 @@ export default function WorkPost({
         <div className="flex items-center gap-4 mb-4">
           <div className="avatar">
             <div className="w-12 h-12 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
-              {author.avatar ? (
-                <img src={author.avatar} alt={author.name} className="rounded-full" />
+              {author.avatarUrl ? (
+                <img src={author.avatarUrl} alt={author.name} className="rounded-full" />
               ) : (
                 <div className="flex items-center justify-center w-full h-full bg-primary text-primary-content font-bold text-xl">
                   {author.name.split(" ").map(n => n[0]).join("")}
