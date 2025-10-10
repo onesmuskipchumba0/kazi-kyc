@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { Bell, ChevronDown, Briefcase, Users, MessageSquare, Star, CheckCircle, UserCheck, Server, Settings } from 'lucide-react';
 import { useNotificationsStore } from '@/lib/notifications/NotificationsStore';
 import { useUserStore } from '@/lib/user/UserStore';
-
+import Link from 'next/link';
+import { metadata } from '../layout';
 interface TabItem {
   id: string;
   label: string;
@@ -259,15 +260,18 @@ export default function NotificationsPage() {
                       
                       {notification.type === 'job_match' && !notification.read && (
                         <div className="mt-3">
-                          <button className="btn btn-primary btn-sm">
-                            View Job <ChevronDown className="ml-1 h-4 w-4" />
-                          </button>
+                          <Link href={`/work/${notification.metadata?.job_id}`}>
+                            <button className="btn btn-primary btn-sm">
+                              View Job <ChevronDown className="ml-1 h-4 w-4" />
+                            </button>
+                          </Link>
                         </div>
                       )}
                     </div>
                     
                     <div className="flex items-center gap-1 ml-2">
                       {!notification.read && (
+                        
                         <button 
                           className="btn btn-ghost btn-xs text-blue-600 hover:text-blue-700 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={(e) => {
