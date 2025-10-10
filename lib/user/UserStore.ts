@@ -10,7 +10,8 @@ export interface UserType {
   phoneNumber: string;
   profileType: string;
   experience:string;
-  coreSkills: string
+  coreSkills: string,
+  avatarUrl: string
 }
 
 interface UserState {
