@@ -1,15 +1,18 @@
 // app/api/messages/[user_id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseClient";
+import { auth } from "@clerk/nextjs/server";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { user_id: string } }
 ) {
   try {
+    const { userId } = await auth();
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
     }
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
 
     // Get current user
     const authHeader = req.headers.get("authorization");
@@ -87,7 +90,6 @@ export async function PUT(
     }
     const currentUserId = userData.user.public_id;
     const otherUserId = params.user_id;
-
     if(!otherUserId) return NextResponse.json({ error: `No other user id found`}, { status: 404});
 
     // First, get the count of unread messages before updating
