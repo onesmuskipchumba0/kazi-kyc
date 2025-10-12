@@ -8,31 +8,51 @@ export async function GET(
   { params }: { params: { user_id: string } }
 ) {
   try {
-    const { userId } = await auth();
+    // Verify authentication with Clerk
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
     }
-    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
 
-    // Get current user
-    const authHeader = req.headers.get("authorization");
-    const cookieHeader = req.headers.get("cookie");
+    // Get current user from database using Clerk ID from clerk_id column
+    const { data: currentUser, error: userError } = await supabaseAdmin
+      .from("user")
+      .select("public_id")
+      .eq("clerk_id", clerkUserId) // Using clerk_id column
+      .single();
 
-    const userResponse = await fetch(`${req.nextUrl.origin}/api/user`, {
-      headers: {
-        ...(authHeader && { authorization: authHeader }),
-        ...(cookieHeader && { cookie: cookieHeader }),
-      },
-    });
-
-    const userData = await userResponse.json();
-    if (!userData.user) {
-      return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
+    if (userError || !currentUser) {
+      console.error("User not found for clerk_id:", clerkUserId);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    const currentUserId = userData.user.public_id;
+
+    const currentUserId = currentUser.public_id;
     const otherUserId = params.user_id;
 
-    if(!otherUserId) return NextResponse.json({ error: `No other user id found`}, { status: 404});
+    if (!otherUserId) {
+      return NextResponse.json({ error: "No other user id found" }, { status: 404 });
+    }
+
+    // Verify that the current user is part of this conversation
+    const { data: conversationCheck, error: conversationError } = await supabaseAdmin
+      .from("messages")
+      .select("id")
+      .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`)
+      .limit(1);
+
+    if (conversationError) {
+      console.error("Conversation check error:", conversationError);
+      return NextResponse.json({ error: "Error verifying conversation access" }, { status: 500 });
+    }
+
+    if (!conversationCheck) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
+    }
+    
 
     // Fetch all messages between current user and otherUserId
     const { data: messages, error } = await supabaseAdmin
@@ -53,44 +73,66 @@ export async function GET(
       .order("created_at", { ascending: true });
 
     if (error) {
-      return NextResponse.json({ error: `${error.message} ${error.hint}` }, { status: 500 });
+      console.error("Error fetching messages:", error);
+      return NextResponse.json({ error: "Failed to fetch messages" }, { status: 500 });
     }
 
     return NextResponse.json({ messages: messages || [] });
   } catch (err) {
-    console.error("Error fetching messages:", err);
+    console.error("Error in messages GET:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// Add PUT endpoint to mark messages as read
 export async function PUT(
   req: NextRequest,
   { params }: { params: { user_id: string } }
 ) {
   try {
+    // Verify authentication with Clerk
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!supabaseAdmin) {
       return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });
     }
 
-    // Get current user
-    const authHeader = req.headers.get("authorization");
-    const cookieHeader = req.headers.get("cookie");
+    // Get current user from database using Clerk ID from clerk_id column
+    const { data: currentUser, error: userError } = await supabaseAdmin
+      .from("user")
+      .select("public_id")
+      .eq("clerk_id", clerkUserId) // Using clerk_id column
+      .single();
 
-    const userResponse = await fetch(`${req.nextUrl.origin}/api/user`, {
-      headers: {
-        ...(authHeader && { authorization: authHeader }),
-        ...(cookieHeader && { cookie: cookieHeader }),
-      },
-    });
-
-    const userData = await userResponse.json();
-    if (!userData.user) {
-      return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
+    if (userError || !currentUser) {
+      console.error("User not found for clerk_id:", clerkUserId);
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-    const currentUserId = userData.user.public_id;
+
+    const currentUserId = currentUser.public_id;
     const otherUserId = params.user_id;
-    if(!otherUserId) return NextResponse.json({ error: `No other user id found`}, { status: 404});
+
+    if (!otherUserId) {
+      return NextResponse.json({ error: "No other user id found" }, { status: 404 });
+    }
+
+    // Verify that the current user is part of this conversation
+    const { data: conversationCheck, error: conversationError } = await supabaseAdmin
+      .from("messages")
+      .select("id")
+      .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`)
+      .limit(1);
+
+    if (conversationError) {
+      console.error("Conversation check error:", conversationError);
+      return NextResponse.json({ error: "Error verifying conversation access" }, { status: 500 });
+    }
+
+    if (!conversationCheck || conversationCheck.length === 0) {
+      return NextResponse.json({ error: "Access denied - conversation not found" }, { status: 403 });
+    }
 
     // First, get the count of unread messages before updating
     const { count, error: countError } = await supabaseAdmin
@@ -101,19 +143,21 @@ export async function PUT(
       .eq("is_read", false);
 
     if (countError) {
-      return NextResponse.json({ error: `Failed to count unread messages: ${countError.message}` }, { status: 500 });
+      console.error("Count error:", countError);
+      return NextResponse.json({ error: "Failed to count unread messages" }, { status: 500 });
     }
 
     // Mark all unread messages from this conversation as read
-    const { data, error } = await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from("messages")
       .update({ is_read: true })
       .eq("receiver_id", currentUserId)
       .eq("sender_id", otherUserId)
       .eq("is_read", false);
 
-    if (error) {
-      return NextResponse.json({ error: `Failed to mark messages as read: ${error.message}` }, { status: 500 });
+    if (updateError) {
+      console.error("Update error:", updateError);
+      return NextResponse.json({ error: "Failed to mark messages as read" }, { status: 500 });
     }
 
     return NextResponse.json({ 
@@ -122,7 +166,7 @@ export async function PUT(
       updatedCount: count || 0
     });
   } catch (err) {
-    console.error("Error marking messages as read:", err);
+    console.error("Error in messages PUT:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -141,7 +141,7 @@ export async function POST(req: Request) {
         email: email_,
         firstName: firstName,
         lastName: lastName,
-        id: clerkId,
+        clerk_id: clerkId,
         avatarUrl: avatarURL || user.imageUrl || "", // Set avatarUrl after spreading defaults
         // Override defaults with provided values
         phoneNumber: phoneNumber !== undefined ? phoneNumber : DEFAULT_USER_VALUES.phoneNumber,
@@ -175,6 +175,7 @@ export async function POST(req: Request) {
       const updateData: any = {
         firstName: firstName,
         lastName: lastName,
+        clerk_id: clerkId,
         updated_at: new Date().toISOString()
       };
 
