@@ -65,7 +65,7 @@ export default function MessagesPage() {
       );
 
       if (existingConversation) {
-        setSelectedChat(existingConversation);
+        await handleSelectConversation(existingConversation);
         return;
       }
 
@@ -128,6 +128,38 @@ export default function MessagesPage() {
     initializeData();
   }, []);
 
+  // Mark messages as read when a conversation is selected
+  const markMessagesAsRead = async (otherUserId: string) => {
+    if (!currentUser?.public_id) return;
+
+    try {
+      const response = await fetch(`/api/messages/${otherUserId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        // Update local state to reflect read status
+        setConversations(prev => prev.map(conv => 
+          conv.otherUser.public_id === otherUserId 
+            ? { ...conv, unreadCount: 0 }
+            : conv
+        ));
+
+        // Update messages to show as read
+        setMessages(prev => prev.map(msg => 
+          msg.sender.public_id === otherUserId && msg.receiver.public_id === currentUser.public_id
+            ? { ...msg, is_read: true }
+            : msg
+        ));
+      }
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
+  };
+
   // Fetch messages when a chat is selected
   useEffect(() => {
     if (selectedChat && currentUser) {
@@ -155,8 +187,12 @@ export default function MessagesPage() {
       
       if (data.messages && Array.isArray(data.messages)) {
         setMessages(data.messages);
+        
+        // Mark messages as read after fetching
+        await markMessagesAsRead(userId);
       } else if (Array.isArray(data)) {
         setMessages(data);
+        await markMessagesAsRead(userId);
       } else {
         setMessages([]);
       }
@@ -166,6 +202,15 @@ export default function MessagesPage() {
       setMessages([]);
     } finally {
       setMessageLoading(false);
+    }
+  };
+
+  const handleSelectConversation = async (conversation: Conversation) => {
+    setSelectedChat(conversation);
+    
+    // If there are unread messages, mark them as read
+    if (conversation.unreadCount > 0) {
+      await markMessagesAsRead(conversation.otherUser.public_id);
     }
   };
 
@@ -312,7 +357,7 @@ export default function MessagesPage() {
                   key={conversation.id}
                   conversation={conversation}
                   isSelected={selectedChat?.id === conversation.id}
-                  onClick={() => setSelectedChat(conversation)}
+                  onClick={() => handleSelectConversation(conversation)}
                 />
               ))}
             </>
