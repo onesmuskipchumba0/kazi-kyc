@@ -18,6 +18,7 @@ import { useUser, SignOutButton } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { useUserStore } from '@/lib/user/UserStore';
 
+
 function Navbar() {
   const { user } = useUser();
   const pathname = usePathname();

@@ -1,26 +1,175 @@
 'use client';
-import { useEffect } from "react";
-import { PlusCircle, TrendingUp } from "lucide-react"
+import { useEffect, useState } from "react";
+import { PlusCircle, TrendingUp, MapPin, Star, MessageCircle, UserPlus } from "lucide-react"
 import WorkPost  from "@/components/WorkPost"
-import PeopleAround from "@/components/PeopleAround"
 import { recentPosts } from "@/app/api/home/homePage"
 import { useUser } from "@clerk/nextjs"
 import { useUsers, useRecentPosts } from "@/lib/homepage/homeStore";
 import PostComponent from "@/components/PostComponent";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 import { useUserStore } from "@/lib/user/UserStore";
+import { useRouter } from "next/navigation";
+
+interface Person {
+  public_id: string;
+  name: string;
+  avatarUrl: string | null;
+  location: string | null;
+  coreSkills: string[] | null;
+  experience: string | null;
+  connectionStatus?: 'connected' | 'pending' | 'none';
+}
 
 export default function HomePage() {
+  const router = useRouter();
   const user = useUserStore((state) => state.user)
   const fetchUser = useUserStore((state) => state.fetchUser)
   const posts = useRecentPosts((state) => state.posts)
   const fetchPosts = useRecentPosts((state) => state.fetchPosts)
   const { supabaseUser, loading } = useSupabaseUser();
+  const [discoverPeople, setDiscoverPeople] = useState<Person[]>([]);
+  const [peopleLoading, setPeopleLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  useEffect(()=>{
+  useEffect(() => {
     fetchPosts()
     fetchUser()
-  },[fetchPosts, fetchUser])
+    fetchCurrentUser();
+  }, [fetchPosts, fetchUser])
+
+  useEffect(() => {
+    if (currentUserId) {
+      fetchDiscoverPeople();
+    }
+  }, [currentUserId]);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch("/api/user");
+      if (response.ok) {
+        const userData = await response.json();
+        setCurrentUserId(userData.user?.public_id || null);
+      }
+    } catch (error) {
+      console.error("Error fetching current user:", error);
+    }
+  };
+
+  const fetchDiscoverPeople = async () => {
+    try {
+      setPeopleLoading(true);
+      const response = await fetch(`/api/network?type=discover&userId=${currentUserId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        let usersArray: Person[] = [];
+
+        if (Array.isArray(data)) {
+          // For discover people, we'll show a limited set (3-4 people)
+          const limitedData = data.slice(0, 4);
+          
+          usersArray = await Promise.all(
+            limitedData.map(async (user: any) => {
+              // Check connection status for each user
+              const isConnected = await checkConnectionStatus(user.public_id);
+              const hasPending = await checkPendingRequest(user.public_id);
+              
+              let connectionStatus: 'connected' | 'pending' | 'none' = 'none';
+              if (isConnected) {
+                connectionStatus = 'connected';
+              } else if (hasPending) {
+                connectionStatus = 'pending';
+              }
+              
+              return {
+                public_id: user.public_id,
+                name: user.name,
+                avatarUrl: user.avatarUrl,
+                location: user.location,
+                coreSkills: user.coreSkills,
+                experience: user.experience,
+                connectionStatus,
+              } as Person;
+            })
+          );
+        }
+
+        setDiscoverPeople(usersArray);
+      }
+    } catch (error) {
+      console.error("Error fetching discover people:", error);
+      setDiscoverPeople([]);
+    } finally {
+      setPeopleLoading(false);
+    }
+  };
+
+  const checkConnectionStatus = async (userId: string): Promise<boolean> => {
+    if (!currentUserId) return false;
+    
+    try {
+      const response = await fetch(`/api/network?type=network&userId=${currentUserId}`);
+      if (response.ok) {
+        const connections = await response.json();
+        return connections.some((connection: any) => 
+          (connection.user_id === currentUserId && connection.target_user_id === userId) ||
+          (connection.user_id === userId && connection.target_user_id === currentUserId)
+        );
+      }
+    } catch (error) {
+      console.error("Error checking connection status:", error);
+    }
+    return false;
+  };
+
+  const checkPendingRequest = async (userId: string): Promise<boolean> => {
+    if (!currentUserId) return false;
+    
+    try {
+      const response = await fetch(`/api/network?type=requests&userId=${currentUserId}`);
+      if (response.ok) {
+        const requests = await response.json();
+        return requests.some((request: any) => 
+          request.user_id === userId
+        );
+      }
+    } catch (error) {
+      console.error("Error checking pending requests:", error);
+    }
+    return false;
+  };
+
+  const handleConnect = async (targetUserId: string) => {
+    if (!currentUserId) {
+      return;
+    }
+
+    try {
+      const requestBody = {
+        currentUserId: currentUserId,
+        targetUserId: targetUserId,
+      };
+
+      const response = await fetch("/api/network", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        // Refresh the discover people list
+        fetchDiscoverPeople();
+      }
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+    }
+  };
+
+  const handleMessage = (targetUserId: string) => {
+    router.push(`/messages?user=${targetUserId}`);
+  };
 
   // Transform user data to match WorkPost author prop with rating and jobsCompleted
   const transformUserToAuthor = (user: any) => {
@@ -105,6 +254,30 @@ export default function HomePage() {
     </div>
   );
 
+  // Skeleton for people cards
+  const PeopleSkeleton = () => (
+    <div className="space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <div key={i} className="card bg-base-100 shadow-sm border border-base-200 animate-pulse">
+          <div className="card-body p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-base-300"></div>
+              <div className="flex-1 space-y-2">
+                <div className="h-4 bg-base-300 rounded w-3/4"></div>
+                <div className="h-3 bg-base-300 rounded w-1/2"></div>
+                <div className="h-3 bg-base-300 rounded w-2/3"></div>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <div className="h-8 bg-base-300 rounded flex-1"></div>
+              <div className="h-8 bg-base-300 rounded flex-1"></div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex-1 py-6 min-h-screen justify-center items-center w-full">
       <div className="max-w-6xl mx-auto">
@@ -118,7 +291,6 @@ export default function HomePage() {
                 `Welcome back, ${supabaseUser?.firstName || 'User'}!`
               )}
             </h1>
-            {/* Fixed: Use div instead of p to avoid nesting issues */}
             <div className="text-base-content/60">
               {loading ? (
                 <div className="h-4 bg-base-300 rounded w-64 animate-pulse mt-1"></div>
@@ -200,7 +372,109 @@ export default function HomePage() {
 
           {/* Sidebar - Takes 1 column on large screens */}
           <div className="space-y-6">
-            <PeopleAround />
+            {/* Discover People Card */}
+            <div className="card bg-base-100 shadow-sm border border-base-200">
+              <div className="card-body p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Discover People</h2>
+                  <button 
+                    onClick={() => router.push('/network')}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    View All
+                  </button>
+                </div>
+                
+                {peopleLoading ? (
+                  <PeopleSkeleton />
+                ) : discoverPeople.length > 0 ? (
+                  <div className="space-y-4">
+                    {discoverPeople.map((person) => (
+                      <div key={person.public_id} className="flex items-center gap-3 p-3 bg-base-200 rounded-lg">
+                        <div className="flex-shrink-0">
+                          {person.avatarUrl ? (
+                            <div className="avatar">
+                              <div className="w-10 h-10 rounded-full">
+                                <img
+                                  src={person.avatarUrl}
+                                  alt={person.name}
+                                  className="object-cover"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="avatar placeholder">
+                              <div className="bg-neutral text-neutral-content rounded-full w-10">
+                                <span className="text-sm">{person.name?.charAt(0) || "U"}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm truncate">{person.name}</h3>
+                          <div className="flex items-center text-xs text-base-content/60 mt-1">
+                            <MapPin className="w-3 h-3 mr-1" />
+                            <span className="truncate">{person.location || "Not specified"}</span>
+                          </div>
+                          {person.experience && (
+                            <div className="flex items-center text-xs text-base-content/70 mt-1">
+                              <Star className="w-3 h-3 text-yellow-500 mr-1" />
+                              <span className="truncate">{person.experience}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex gap-1">
+                          {person.connectionStatus === 'connected' ? (
+                            <button
+                              disabled
+                              className="btn btn-success btn-xs cursor-not-allowed"
+                              title="Already Connected"
+                            >
+                              <Star className="w-3 h-3" />
+                            </button>
+                          ) : person.connectionStatus === 'pending' ? (
+                            <button
+                              disabled
+                              className="btn btn-warning btn-xs cursor-not-allowed"
+                              title="Request Sent"
+                            >
+                              <UserPlus className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleConnect(person.public_id)}
+                              className="btn btn-primary btn-xs"
+                              title="Connect"
+                            >
+                              <UserPlus className="w-3 h-3" />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => handleMessage(person.public_id)}
+                            className="btn btn-outline btn-xs"
+                            title="Message"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-base-content/60">
+                    <p className="text-sm">No people to discover right now</p>
+                    <button 
+                      onClick={() => router.push('/network')}
+                      className="btn btn-link btn-sm text-primary"
+                    >
+                      Browse Network
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             
             {/* Quick Stats Card */}
             <div className="card bg-base-100 shadow-sm border border-base-200">
@@ -209,16 +483,7 @@ export default function HomePage() {
                   <h2 className="text-lg font-semibold">Quick Stats</h2>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-base-content/60">Profile Views</span>
-                    <span className="font-semibold">
-                      {loading ? (
-                        <div className="h-4 bg-base-300 rounded w-12 animate-pulse"></div>
-                      ) : (
-                        userStats.profileViews
-                      )}
-                    </span>
-                  </div>
+                  
                   <div className="flex justify-between items-center">
                     <span className="text-base-content/60">Jobs Completed</span>
                     <span className="font-semibold">
