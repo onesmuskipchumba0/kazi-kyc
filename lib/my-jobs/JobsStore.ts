@@ -114,6 +114,9 @@ export const ApplicationStore = create<ApplicationTypes>((set) => ({
       date: formattedDate,
       pay: parseFloat(job.pay_rate),
       status: app.status as "active" | "completed" | "pending" | "cancelled",
+      cover_letter: app.cover_letter,
+      applied_at:app.applied_at,
+
     };
   })
 );
