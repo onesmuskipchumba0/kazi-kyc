@@ -17,6 +17,7 @@ interface UserType {
   profileViews?: number;
   earnings?: number;
   location?: string;
+  phoneNumber: string,
 }
 
 interface UserState {

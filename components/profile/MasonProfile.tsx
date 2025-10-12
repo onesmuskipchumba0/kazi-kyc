@@ -33,11 +33,11 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string>('');
   const [toastType, setToastType] = useState<'success' | 'error' | 'warning'>('success');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
 
   const {isSignedIn, user, isLoaded} = useUser();
   const [activeTab, setActiveTab] = useState('overview');
-  const [profileData, setProfileData] = useState(mason);
+  const [profileData, setProfileData] = useState<any>(null);
 
   // Professional Loading Component
   const ProfessionalLoadingScreen = () => (
@@ -232,10 +232,50 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
         }
       } else {
         console.log('No user data found, using default values');
+        // Set default profile data even if API fails
+        setProfileData({
+          title: 'Professional',
+          location: 'Location not set',
+          profileType: 'worker',
+          description: 'No description available',
+          jobsCompleted: 0,
+          hourlyRate: 0,
+          responseTime: 24,
+          completionRate: 100,
+          companyName: '',
+          employeesCount: 0,
+          projectsCompleted: 0,
+          avatarUrl: user?.imageUrl || '',
+          contact: {
+            phone: '',
+            email: user?.emailAddresses?.[0]?.emailAddress || '',
+            location: ''
+          }
+        });
       }
     } catch (error) {
       console.error('Error loading user data:', error);
       showToast('Failed to load profile data', 'error');
+      // Set default profile data on error
+      setProfileData({
+        title: 'Professional',
+        location: 'Location not set',
+        profileType: 'worker',
+        description: 'No description available',
+        jobsCompleted: 0,
+        hourlyRate: 0,
+        responseTime: 24,
+        completionRate: 100,
+        companyName: '',
+        employeesCount: 0,
+        projectsCompleted: 0,
+        avatarUrl: user?.imageUrl || '',
+        contact: {
+          phone: '',
+          email: user?.emailAddresses?.[0]?.emailAddress || '',
+          location: ''
+        }
+      });
     } finally {
       setIsLoading(false);
     }
@@ -244,8 +284,13 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
   useEffect(() => {
     if (isSignedIn && isLoaded) {
       loadUserData();
+    } else if (!isSignedIn && isLoaded) {
+      // If not signed in, stop loading
+      setIsLoading(false);
     }
   }, [isSignedIn, isLoaded]);
+
+  // ... rest of your functions remain the same (handleAdd, handleAddCoreSkill, etc.)
 
   const handleAdd = () => {
     if (inputValue && !languages.includes(inputValue)) {
@@ -400,7 +445,7 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
       languages: selected,
       coreSkills: selectedCoreSkills,
       profileType,
-      avatarURL: profilePictureUrl || profileData.avatarUrl,
+      avatarURL: profilePictureUrl || profileData?.avatarUrl,
       jobsCompleted: 0,
       responseTime: 24,
       completionRate: 100,
@@ -455,18 +500,8 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
     }
   };
 
-  if (!profileData) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-gray-700">Profile not found</div>
-          <p className="text-gray-500 mt-2">The requested profile could not be loaded.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
+  // Show loading screen while loading or if profile data is not yet loaded
+  if (isLoading || !profileData) {
     return <ProfessionalLoadingScreen />;
   }
 
@@ -499,19 +534,19 @@ const MasonProfile: React.FC<MasonProfileProps> = ({ mason }) => {
                   <div className="mr-4 relative">
                     <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-white">
                       <img 
-                        src={profileData.avatarUrl || user.imageUrl} 
-                        alt={user.firstName || ""}
+                        src={profileData.avatarUrl || user?.imageUrl} 
+                        alt={user?.firstName || ""}
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    {profileData.avatarUrl && profileData.avatarUrl !== user.imageUrl && (
+                    {profileData.avatarUrl && profileData.avatarUrl !== user?.imageUrl && (
                       <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                         <span className="text-white text-xs">✓</span>
                       </div>
                     )}
                   </div>
                 <div>
-                  <h1 className="text-3xl font-bold">{user.fullName}</h1>
+                  <h1 className="text-3xl font-bold">{user?.fullName}</h1>
                   <div className="flex items-center mt-2 flex-wrap">
                     <FaBriefcase className="mr-2" />
                     <span>{profileData.title || 'Professional'}</span>
