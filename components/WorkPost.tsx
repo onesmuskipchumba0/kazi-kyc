@@ -382,7 +382,7 @@ export default function WorkPost({
     }
   };
 
-  if (isLoading || !clerkLoaded) {
+/*   if (isLoading || !clerkLoaded) {
     return (
       <div className="card bg-base-100 shadow-sm border border-base-200">
         <div className="card-body">
@@ -392,7 +392,7 @@ export default function WorkPost({
         </div>
       </div>
     );
-  }
+  } */
 
   return (
     <div className="card bg-base-100 shadow-sm border border-base-200">
